@@ -1,0 +1,7 @@
+{
+"type": "FeatureCollection",
+"name": "aoi_zht",
+"features": [
+{"type":"Feature","properties":{},"geometry":{"type":"Polygon","coordinates":[[[28.5754383,50.1670369],[28.5336754,50.0575281],[28.7874008,50.0442237],[28.8066585,50.1461528],[28.5754383,50.1670369]]]}}
+]
+}
