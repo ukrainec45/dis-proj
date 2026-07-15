@@ -19,18 +19,14 @@ The problem is **multi-objective in nature**, solved as a **true multi-objective
 
 A path $P$ is an ordered sequence of waypoints:
 
-$$P = \langle w_0, w_1, \ldots, w_n \rangle, \quad w_i = (x_i, y_i) \in \mathbb{Z}^2$$
-
-Altitude at each waypoint is derived from terrain (2.5D planning):
-
-$$z_i = \text{dem}(x_i, y_i) + h_{\text{clearance}}$$
+$$P = \langle w_0, w_1, \ldots, w_n \rangle, \quad w_i = (x_i, y_i, z_i) \in \mathbb{R}^3$$
 
 Edge set:
 
 $$E(P) = \{(w_i, w_{i+1}) \mid i = 0, \ldots, n-1\}$$
 
 ### Space Representation
-**2.5D grid** — planning happens on a 2D raster grid. Altitude is derived from DEM, not a free variable. Full 3D can be added later if needed.
+**3D grid** — planning happens on a 3D raster grid. Altitude $z_i$ is a free decision variable subject to constraints.
 
 ---
 
@@ -67,34 +63,30 @@ Primary objective. Time is the main optimization criterion because critical task
 
 ### $f_2$ — Navigation Quality (maximise)
 
-$$f_2(P) = \sum_{e \in E(P)} \rho_{\text{nav}}(e) \cdot t(e)$$
+$$f_2(P) = \sum_{e \in E(P)} \max\!\left(\phi_{\text{vis}}(e),\ \phi_{\text{ter}}(e)\right) \cdot t(e)$$
 
 Where navigation feature density combines visual richness and terrain roughness as **alternative** localization sources (UAV can use whichever works):
 
-$$\rho_{\text{nav}}(e) = \max\!\left(\rho_{\text{vis}}(e),\ \rho_{\text{flat}}(e)\right)$$
-
-- $\rho_{\text{vis}}(e) \in [0,1]$ — visual feature richness from satellite imagery (high = good)
-- $\rho_{\text{flat}}(e) \in [0,1]$ — terrain roughness from DEM rugosity (high = good)
+- $\phi_{\text{vis}}(e) \in [0,1]$ — visual feature richness from satellite imagery (high = good)
+- $\phi_{\text{ter}}(e) \in [0,1]$ — terrain roughness from DEM rugosity (high = good)
 - **max** is used because the two are alternative navigation methods — if one fails the other takes over. Geometric mean would be used if both were required simultaneously.
 - Multiplied by $t(e)$ because longer time in good navigation conditions means more sensor updates and better position estimate convergence.
 
-### $f_3$ — Visibility Reduction Exposure (minimise)
+### $f_3$ — Visibility (maximise)
 
-$$f_3(P) = \sum_{e \in E(P)} \phi_{\text{vsb}}(e)$$
+$$f_3(P) = \sum_{e \in E(P)} \phi_{\text{vsb}}(e) \cdot t(e)$$
 
-$\phi_{\text{vsb}}(e) \in [0,1]$ — smoke, fog, precipitation density along edge (high = bad).
+$\phi_{\text{vsb}}(e) \in [0,1]$ — visibility quality along edge (high = good, 1 = clear).
 
-### $f_4$ — Temperature Hazard Exposure (minimise)
+The planner prefers edges where visibility stays high for longer duration. Maximizing $f_3$ minimizes exposure to degraded visibility.
 
-$$f_4(P) = \sum_{e \in E(P)} \phi_{\text{tmp}}(e)$$
-
-$\phi_{\text{tmp}}(e) \in [0,1]$ — fire proximity, icing risk (high = bad).
+---
 
 ### Combined Objective Vector
 
-$$\min_{P} \; \mathbf{F}(P) = \bigl(f_1(P),\ -f_2(P),\ f_3(P),\ f_4(P)\bigr)$$
+$$\min_{P} \; \mathbf{F}(P) = \bigl(f_1(P),\ -f_2(P),\ -f_3(P)\bigr)$$
 
-$f_2$ is negated because it is maximised while others are minimised.
+Both $f_2$ and $f_3$ are maximised, so they are negated in the minimisation formulation.
 
 ---
 
@@ -102,15 +94,15 @@ $f_2$ is negated because it is maximised while others are minimised.
 
 All constraints together form a system — every one must be satisfied simultaneously:
 
-$$\text{subject to} \begin{cases} \text{dem}(x_i, y_i) + h_{\text{clearance}} \leq z_i \leq z_{\max} & \forall i \\[6pt] w_i \notin \mathcal{F} \cup \mathcal{H} & \forall i \\[6pt] \|\vec{u}(e)\| < v_{\max} & \forall e \in E(P) \\[6pt] \displaystyle\sum_{e \in E(P)} \varepsilon(e) \leq \mathcal{E}_{\text{budget}} \\[6pt] \mathcal{E}_{\text{budget}} - \displaystyle\sum_{e \in E(P_0 \to w_i)} \varepsilon(e) \geq \varepsilon(w_i \to L_i) & \forall i \\[6pt] \rho(e_i, e_{i+1}) \geq r_{\min} & \forall i \\[6pt] w_0 = s, \quad w_n = g \end{cases}$$
+$$\text{subject to} \begin{cases} \text{dem}(x_i, y_i) + h_{\text{clearance}} \leq z_i \leq z_{\max} & \forall i \\[6pt] w_i \notin \mathcal{F} & \forall i \\[6pt] \|\vec{u}(e)\| < v_{\max} & \forall e \in E(P) \\[6pt] \displaystyle\sum_{e \in E(P)} \varepsilon(e) \leq \mathcal{E}_{\text{budget}} \\[6pt] \mathcal{E}_{\text{budget}} - \displaystyle\sum_{e \in E(P_0 \to w_i)} \varepsilon(e) \geq \varepsilon(w_i \to L_i) & \forall i \\[6pt] \rho(e_i, e_{i+1}) \geq r_{\min} & \forall i \\[6pt] w_0 = s, \quad w_n = g \end{cases}$$
 
 ### Constraint Explanations
 
 **Terrain clearance and altitude ceiling:**
 UAV must fly above terrain plus safety margin, and below its operational ceiling.
 
-**No-fly zones $\mathcal{F}$ and hazard zones $\mathcal{H}$:**
-$\mathcal{F}$ = NFZ cells (regulatory). $\mathcal{H}$ = active fire, flood zones. $\cup$ = union — must avoid both simultaneously. These are hard geometric exclusions.
+**No-fly zones $\mathcal{F}$:**
+$\mathcal{F}$ = NFZ cells (regulatory). Must avoid these hard geometric exclusions.
 
 **Total wind magnitude $\|\vec{u}(e)\| < v_{\max}$:**
 Total wind speed must be strictly less than UAV maximum airspeed on every edge. If wind equals or exceeds airspeed, UAV cannot make forward progress in any direction. This constraint subsumes the crosswind constraint — $\|\vec{u}\|^2 = u_\perp^2 + u_\parallel^2 \geq u_\perp^2$.
@@ -130,7 +122,7 @@ Turning radius implied by the angle between consecutive edges must be at least t
 
 ## Why Constraints Are Hard, Not Soft
 
-Quality factors (visual richness, visibility, temperature) are **soft** — encoded in objectives or as time penalties. They influence routing but never block a path. This prevents dead ends where no feasible path exists.
+Quality factors (visual richness, visibility) are **soft** — encoded in objectives or as time penalties. They influence routing but never block a path. This prevents dead ends where no feasible path exists.
 
 Only physically impossible or safety-critical conditions are hard constraints:
 - Terrain collision — physically impossible
@@ -147,9 +139,9 @@ Only physically impossible or safety-critical conditions are hard constraints:
 | Start/goal points | Coordinates | Boundary conditions |
 | Satellite imagery | GeoTIFF (RGB) | Visual feature density $\rho_{\text{vis}}$ |
 | DEM | GeoTIFF | Terrain elevation, rugosity $\rho_{\text{flat}}$, occupancy mask |
-| Weather (NWP) | GRIB2 (GFS/ECMWF) | Visibility $\phi_{\text{vsb}}$, temperature $\phi_{\text{tmp}}$ |
+| Weather (NWP) | GRIB2 (GFS/ECMWF) | Visibility $\phi_{\text{vsb}}$ |
 | Wind field | GRIB2 U/V components | Wind vector $\vec{u}(e)$ per cell at cruise altitude |
-| NFZ/hazard polygons | GeoJSON/Shapefile | $\mathcal{F}$ and $\mathcal{H}$ occupancy masks |
+| NFZ polygons | GeoJSON/Shapefile | $\mathcal{F}$ occupancy mask |
 | UAV specification | Config | $v_{\max}$, $\mathcal{E}_{\text{budget}}$, $r_{\min}$, $h_{\text{clearance}}$, $z_{\max}$ |
 
 ---
@@ -167,15 +159,14 @@ All layers reprojected to a common UTM grid using `rasterio` + `pyproj`. Cell $(
 | `visual_richness` | `[H, W]` | float32 [0..1] | Feature density from imagery |
 | `rugosity` | `[H, W]` | float32 [0..1] | Terrain roughness from DEM |
 | `nav_density` | `[H, W]` | float32 [0..1] | max(visual, rugosity) |
-| `visibility_cost` | `[H, W]` | float32 [0..1] | Smoke/fog/precipitation |
-| `temperature_cost` | `[H, W]` | float32 [0..1] | Fire/icing hazard |
+| `visibility_quality` | `[H, W]` | float32 [0..1] | 1 = clear, 0 = opaque |
 | `wind_field` | `[H, W, 2]` | float32 | [u_east, u_north] at cruise alt |
 | `occupancy` | `[H, W]` | bool | Hard blocked cells |
 
 H = number of cells north-south, W = number of cells east-west.
 
 ### Layer Normalization
-All map layers (visual, rugosity, visibility, temperature) are normalized to [0..1] **once at build time** using percentile clipping to handle outliers:
+All map layers (visual, rugosity, visibility) are normalized to [0..1] **once at build time** using percentile clipping to handle outliers:
 
 ```python
 def normalize_robust(layer, lo_pct=2, hi_pct=98):
@@ -239,10 +230,9 @@ def edge_objectives(start, end, cost_map, v_max):
 
     # Map layer samples along edge
     nav  = sample_layer(cost_map.nav_density,      start, end)
-    vsb  = sample_layer(cost_map.visibility_cost,  start, end)
-    tmp  = sample_layer(cost_map.temperature_cost, start, end)
+    vsb  = sample_layer(cost_map.visibility_quality, start, end)
 
-    return (t, nav * t, vsb, tmp)  # (f1, f2, f3, f4) contributions
+    return (t, nav * t, vsb * t)  # (f1, f2, f3) contributions
 ```
 
 Layer sampling walks along the edge and averages values at intermediate cells:
@@ -343,6 +333,7 @@ Build controlled maps with known correct answers before using real geodata. Scen
 Each objective function tested independently with known inputs:
 - $f_1$: calm air, tailwind, headwind, crosswind cases
 - $f_2$: max of two navigation sources
+- $f_3$: visibility quality cases
 - Wind constraint: boundary cases at $\|\vec{u}\| < v_{\max}$ and $\geq v_{\max}$
 
 ### Pareto Front Validation
