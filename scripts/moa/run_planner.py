@@ -2,8 +2,8 @@
 
 Run as a module:
 
-    python -m scripts.run_planner --scenario lake
-    python -m scripts.run_planner --map layers.npz --start 0,13 --goal 18,0
+    python -m scripts.moa.run_planner --scenario lake
+    python -m scripts.moa.run_planner --map layers.npz --start 0,13 --goal 18,0
 
 Computes the exact Pareto front, prints the non-dominated cost vectors and
 selects one path with TOPSIS. The map NPZ must contain layers compatible with

@@ -12,11 +12,11 @@ anim  : GIF of the label-expansion sequence (markers light up in the
 
 Run as a module:
 
-    python -m scripts.visualize --mode trace
-    python -m scripts.visualize --mode trace --limit 60
-    python -m scripts.visualize --mode map    --save-dir plots
-    python -m scripts.visualize --mode anim   --save-dir plots
-    python -m scripts.visualize --mode map    --scenario lake
+    python -m scripts.moa.visualize --mode trace
+    python -m scripts.moa.visualize --mode trace --limit 60
+    python -m scripts.moa.visualize --mode map    --save-dir plots
+    python -m scripts.moa.visualize --mode anim   --save-dir plots
+    python -m scripts.moa.visualize --mode map    --scenario lake
 """
 
 import argparse
