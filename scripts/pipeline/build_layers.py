@@ -10,7 +10,7 @@ import argparse
 import numpy as np
 
 from .cell_vectors import build_cell_vectors, to_planner_layers
-from .quality import compute_localization_metric, terrain_grid_quality
+from .nav_quality import compute_localization_metric, terrain_grid_quality
 from .raster import create_grid, get_path, read_dem_aoi, read_image_aoi
 from .visibility import (aggregate_to_planner_grid, combine_sources,
                          compute_visibility, gaussian_density,

@@ -151,8 +151,8 @@ def _print_map_header(cost_map):
           f"resolution {cost_map.resolution_m:.0f} m")
     print(f"start = {cost_map.start}   goal = {cost_map.goal}   "
           f"v_air = {cost_map.v_air} m/s   v_max = {cost_map.v_max} m/s")
-    print("legend:  . good terrain   ~ lake (nav_density = 0)   "
-          "o poor terrain   f fog (visibility = 0.2)   X no-fly   "
+    print("legend:  . good navigation quality   ~ low navigation-quality area   "
+          "o poor terrain   f low-visibility zone   X NFZ   "
           "S start   G goal")
     if cost_map.z_max_m is not None:
         print(f"constraints: z_max={cost_map.z_max_m:g} m, "
@@ -295,8 +295,8 @@ def map_plot(cost_map, save_dir, weights=(0.5, 0.3, 0.2)):
                              mask=cost_map.occupancy)
     im = ax.imshow(nav, cmap="viridis", vmin=0, vmax=1,
                    extent=[-0.5, W - 0.5, H - 0.5, -0.5], aspect="equal")
-    fog = cost_map.visibility < 0.8
-    for y, x in np.argwhere(fog):
+    low_visibility = cost_map.visibility < 0.8
+    for y, x in np.argwhere(low_visibility):
         ax.add_patch(Rectangle((x - 0.5, y - 0.5), 1, 1,
                                facecolor=(0.35, 0.6, 1.0, 0.3),
                                edgecolor="tab:blue", hatch="//", lw=0.9))
@@ -319,18 +319,6 @@ def map_plot(cost_map, save_dir, weights=(0.5, 0.3, 0.2)):
         ly, lx = np.where(cost_map.landing_sites)
         ax.plot(lx, ly, "^", color="limegreen", mec="black", ms=8, zorder=5)
 
-    labels, _, lake_label = _low_nav_components(cost_map)
-    lake_cells = (np.argwhere(labels == lake_label)
-                  if lake_label else np.empty((0, 2), dtype=int))
-    if len(lake_cells):
-        cy, cx = lake_cells.mean(axis=0)
-        ax.text(cx, cy, "lake", color="white", fontsize=9, ha="center",
-                va="center", fontstyle="italic", zorder=2)
-    if fog.any():
-        fy, fx = np.argwhere(fog).mean(axis=0)
-        ax.text(fx, max(fy - 0.6, 0.4), "fog", color="tab:blue", fontsize=9,
-                ha="center", va="bottom", fontstyle="italic", zorder=2)
-
     # route roles (which objective each route optimises) + TOPSIS pick
     roles = {int(np.argmin(costs[:, 0])): "fastest",
              int(np.argmin(costs[:, 1])): "best navigation",
@@ -350,13 +338,16 @@ def map_plot(cost_map, save_dir, weights=(0.5, 0.3, 0.2)):
         handles.append(Line2D([], [], color=route_colors[i], lw=2.6,
                               label=f"P{i}  {roles.get(i, 'representative'):<17} f=({c[0]:.2f}, "
                                     f"{c[1]:.2f}, {c[2]:.2f}){pick}"))
-    if len(lake_cells):
+    if np.any(cost_map.nav_density < 0.5):
         handles.append(Patch(facecolor=plt.cm.viridis(0.0), edgecolor="none",
-                             label="lake  (nav_density = 0)"))
-    if fog.any():
+                             label="low navigation-quality area  (nav_density < 0.5)"))
+    if low_visibility.any():
         handles.append(Patch(facecolor=(0.35, 0.6, 1.0, 0.3),
                              edgecolor="tab:blue", hatch="//",
-                             label="fog  (visibility = 0.2)"))
+                             label="low-visibility zone  (visibility < 0.8)"))
+    if cost_map.occupancy.any():
+        handles.append(Patch(facecolor="white", edgecolor="0.45",
+                             label="NFZ  (no-fly zone)"))
     if isinstance(altitude_blocked, np.ndarray) and altitude_blocked.any():
         handles.append(Patch(facecolor=(0.9, 0.2, 0.2, 0.22), edgecolor="firebrick",
                              hatch="xx", label="above z_max (blocked)"))
