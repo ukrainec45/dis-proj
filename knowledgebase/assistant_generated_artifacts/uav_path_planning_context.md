@@ -41,11 +41,11 @@ Wind vector $\vec{u}(e)$ is sampled at the midpoint of each edge. It is decompos
 $$u_\parallel(e) = \vec{u}(e) \cdot \hat{e} \qquad \text{(along-track — dot product)}$$
 $$u_\perp(e) = \vec{u}(e) \times \hat{e} \qquad \text{(cross-track — 2D cross product scalar)}$$
 
-**Ground speed** (UAV flies at $v_{\max}$, crabbing into crosswind to maintain track):
+**Ground speed** (UAV flies at $v_{\text{air}}$, crabbing into crosswind to maintain track):
 
-$$v_g(e) = \sqrt{v_{\max}^2 - u_\perp(e)^2} + u_\parallel(e)$$
+$$v_g(e) = \sqrt{v_{\text{air}}^2 - u_\perp(e)^2} + u_\parallel(e)$$
 
-- The $\sqrt{v_{\max}^2 - u_\perp^2}$ term comes from Pythagoras — crosswind forces the UAV to crab, consuming part of $v_{\max}$ to cancel drift, leaving less airspeed for forward motion.
+- The $\sqrt{v_{\text{air}}^2 - u_\perp^2}$ term comes from Pythagoras — crosswind forces the UAV to crab, consuming part of $v_{\text{air}}$ to cancel drift, leaving less airspeed for forward motion.
 - $u_\parallel$ adds (tailwind) or subtracts (headwind) from ground speed linearly.
 - Wind is spatially varying but temporally frozen at forecast time (standard NWP assumption).
 
@@ -61,13 +61,13 @@ Where $d(e)$ is the Euclidean length of the edge in meters.
 
 ### $f_1$ — Flight Time (minimise)
 
-$$f_1(P) = \sum_{e \in E(P)} t(e) = \sum_{e \in E(P)} \frac{d(e)}{\sqrt{v_{\max}^2 - u_\perp(e)^2} + u_\parallel(e)}$$
+$$f_1(P) = \sum_{e \in E(P)} t(e) = \sum_{e \in E(P)} \frac{d(e)}{\sqrt{v_{\text{air}}^2 - u_\perp(e)^2} + u_\parallel(e)}$$
 
 Primary objective. Time is the main optimization criterion because critical tasks in harsh environments prioritize speed of completion.
 
-### $f_2$ — Navigation Quality (maximise)
+### $f_2$ — Navigation Quality Deficit (minimise)
 
-$$f_2(P) = \sum_{e \in E(P)} \rho_{\text{nav}}(e) \cdot t(e)$$
+$$f_2(P) = \sum_{e \in E(P)} \left(1 - \rho_{\text{nav}}(e)\right) \cdot t(e)$$
 
 Where navigation feature density combines visual richness and terrain roughness as **alternative** localization sources (UAV can use whichever works):
 
@@ -76,25 +76,20 @@ $$\rho_{\text{nav}}(e) = \max\!\left(\rho_{\text{vis}}(e),\ \rho_{\text{flat}}(e
 - $\rho_{\text{vis}}(e) \in [0,1]$ — visual feature richness from satellite imagery (high = good)
 - $\rho_{\text{flat}}(e) \in [0,1]$ — terrain roughness from DEM rugosity (high = good)
 - **max** is used because the two are alternative navigation methods — if one fails the other takes over. Geometric mean would be used if both were required simultaneously.
-- Multiplied by $t(e)$ because longer time in good navigation conditions means more sensor updates and better position estimate convergence.
+- $1 - \rho_{\text{nav}}(e)$ is the **navigation quality deficit** — flying for a long time over feature-poor terrain accumulates a large deficit, which is penalised. Multiplied by $t(e)$ because deficit accrues over flight time.
 
-### $f_3$ — Visibility Reduction Exposure (minimise)
+### $f_3$ — Visibility Deficit (minimise)
 
-$$f_3(P) = \sum_{e \in E(P)} \phi_{\text{vsb}}(e)$$
+$$f_3(P) = \sum_{e \in E(P)} \left(1 - \phi_{\text{vsb}}(e)\right) \cdot t(e)$$
 
-$\phi_{\text{vsb}}(e) \in [0,1]$ — smoke, fog, precipitation density along edge (high = bad).
-
-### $f_4$ — Temperature Hazard Exposure (minimise)
-
-$$f_4(P) = \sum_{e \in E(P)} \phi_{\text{tmp}}(e)$$
-
-$\phi_{\text{tmp}}(e) \in [0,1]$ — fire proximity, icing risk (high = bad).
+$\phi_{\text{vsb}}(e) \in [0,1]$ — visibility quality along edge (1 = full visibility, high = good).
+- $1 - \phi_{\text{vsb}}(e)$ is the **visibility deficit** — flying for a long time in degraded visibility accumulates a large deficit, which is penalised. Multiplied by $t(e)$ because deficit accrues over flight time.
 
 ### Combined Objective Vector
 
-$$\min_{P} \; \mathbf{F}(P) = \bigl(f_1(P),\ -f_2(P),\ f_3(P),\ f_4(P)\bigr)$$
+$$\min_{P} \; \mathbf{F}(P) = \bigl(f_1(P),\ f_2(P),\ f_3(P)\bigr)$$
 
-$f_2$ is negated because it is maximised while others are minimised.
+All three objectives are **time-weighted and minimised**: $f_2$ and $f_3$ are expressed as navigation/visibility **deficits**, so no negation is needed.
 
 ---
 
@@ -102,15 +97,15 @@ $f_2$ is negated because it is maximised while others are minimised.
 
 All constraints together form a system — every one must be satisfied simultaneously:
 
-$$\text{subject to} \begin{cases} \text{dem}(x_i, y_i) + h_{\text{clearance}} \leq z_i \leq z_{\max} & \forall i \\[6pt] w_i \notin \mathcal{F} \cup \mathcal{H} & \forall i \\[6pt] \|\vec{u}(e)\| < v_{\max} & \forall e \in E(P) \\[6pt] \displaystyle\sum_{e \in E(P)} \varepsilon(e) \leq \mathcal{E}_{\text{budget}} \\[6pt] \mathcal{E}_{\text{budget}} - \displaystyle\sum_{e \in E(P_0 \to w_i)} \varepsilon(e) \geq \varepsilon(w_i \to L_i) & \forall i \\[6pt] \rho(e_i, e_{i+1}) \geq r_{\min} & \forall i \\[6pt] w_0 = s, \quad w_n = g \end{cases}$$
+$$\text{subject to} \begin{cases} \text{dem}(x_i, y_i) + h_{\text{clearance}} \leq z_i \leq z_{\max} & \forall i \\[6pt] w_i \notin \mathcal{F} & \forall i \\[6pt] \|\vec{u}(e)\| < v_{\max} & \forall e \in E(P) \\[6pt] \displaystyle\sum_{e \in E(P)} \varepsilon(e) \leq \mathcal{E}_{\text{budget}} \\[6pt] \mathcal{E}_{\text{budget}} - \displaystyle\sum_{e \in E(P_0 \to w_i)} \varepsilon(e) \geq \varepsilon(w_i \to L_i) & \forall i \\[6pt] \rho(e_i, e_{i+1}) \geq r_{\min} & \forall i \\[6pt] w_0 = s, \quad w_n = g \end{cases}$$
 
 ### Constraint Explanations
 
 **Terrain clearance and altitude ceiling:**
 UAV must fly above terrain plus safety margin, and below its operational ceiling.
 
-**No-fly zones $\mathcal{F}$ and hazard zones $\mathcal{H}$:**
-$\mathcal{F}$ = NFZ cells (regulatory). $\mathcal{H}$ = active fire, flood zones. $\cup$ = union — must avoid both simultaneously. These are hard geometric exclusions.
+**No-fly zones $\mathcal{F}$:**
+$\mathcal{F}$ = NFZ cells (regulatory). These are hard geometric exclusions.
 
 **Total wind magnitude $\|\vec{u}(e)\| < v_{\max}$:**
 Total wind speed must be strictly less than UAV maximum airspeed on every edge. If wind equals or exceeds airspeed, UAV cannot make forward progress in any direction. This constraint subsumes the crosswind constraint — $\|\vec{u}\|^2 = u_\perp^2 + u_\parallel^2 \geq u_\perp^2$.
@@ -130,7 +125,7 @@ Turning radius implied by the angle between consecutive edges must be at least t
 
 ## Why Constraints Are Hard, Not Soft
 
-Quality factors (visual richness, visibility, temperature) are **soft** — encoded in objectives or as time penalties. They influence routing but never block a path. This prevents dead ends where no feasible path exists.
+Quality factors (visual richness, visibility) are **soft** — encoded in objectives or as time penalties. They influence routing but never block a path. This prevents dead ends where no feasible path exists.
 
 Only physically impossible or safety-critical conditions are hard constraints:
 - Terrain collision — physically impossible
@@ -147,10 +142,10 @@ Only physically impossible or safety-critical conditions are hard constraints:
 | Start/goal points | Coordinates | Boundary conditions |
 | Satellite imagery | GeoTIFF (RGB) | Visual feature density $\rho_{\text{vis}}$ |
 | DEM | GeoTIFF | Terrain elevation, rugosity $\rho_{\text{flat}}$, occupancy mask |
-| Weather (NWP) | GRIB2 (GFS/ECMWF) | Visibility $\phi_{\text{vsb}}$, temperature $\phi_{\text{tmp}}$ |
+| Weather (NWP) | GRIB2 (GFS/ECMWF) | Visibility quality $\phi_{\text{vsb}}$ |
 | Wind field | GRIB2 U/V components | Wind vector $\vec{u}(e)$ per cell at cruise altitude |
-| NFZ/hazard polygons | GeoJSON/Shapefile | $\mathcal{F}$ and $\mathcal{H}$ occupancy masks |
-| UAV specification | Config | $v_{\max}$, $\mathcal{E}_{\text{budget}}$, $r_{\min}$, $h_{\text{clearance}}$, $z_{\max}$ |
+| NFZ polygons | GeoJSON/Shapefile | $\mathcal{F}$ occupancy masks |
+| UAV specification | Config | $v_{\text{air}}$, $v_{\max}$, $\mathcal{E}_{\text{budget}}$, $r_{\min}$, $h_{\text{clearance}}$, $z_{\max}$ |
 
 ---
 
@@ -167,15 +162,14 @@ All layers reprojected to a common UTM grid using `rasterio` + `pyproj`. Cell $(
 | `visual_richness` | `[H, W]` | float32 [0..1] | Feature density from imagery |
 | `rugosity` | `[H, W]` | float32 [0..1] | Terrain roughness from DEM |
 | `nav_density` | `[H, W]` | float32 [0..1] | max(visual, rugosity) |
-| `visibility_cost` | `[H, W]` | float32 [0..1] | Smoke/fog/precipitation |
-| `temperature_cost` | `[H, W]` | float32 [0..1] | Fire/icing hazard |
+| `visibility` | `[H, W]` | float32 [0..1] | Visibility quality (1 = full visibility) |
 | `wind_field` | `[H, W, 2]` | float32 | [u_east, u_north] at cruise alt |
 | `occupancy` | `[H, W]` | bool | Hard blocked cells |
 
 H = number of cells north-south, W = number of cells east-west.
 
 ### Layer Normalization
-All map layers (visual, rugosity, visibility, temperature) are normalized to [0..1] **once at build time** using percentile clipping to handle outliers:
+All map layers (visual, rugosity, visibility) are normalized to [0..1] **once at build time** using percentile clipping to handle outliers:
 
 ```python
 def normalize_robust(layer, lo_pct=2, hi_pct=98):
@@ -212,10 +206,10 @@ for z in range(altitude_layers):
 
 ## Edge Cost Evaluation
 
-The planner calls `edge_cost(start, end)` for every candidate edge. It returns a 4-vector of objective contributions:
+The planner calls `edge_cost(start, end)` for every candidate edge. It returns a 3-vector of objective contributions:
 
 ```python
-def edge_objectives(start, end, cost_map, v_max):
+def edge_objectives(start, end, cost_map, v_air, v_max):
     # Hard constraints first
     if cost_map.occupancy[end[1], end[0]]:
         return None  # infeasible
@@ -224,25 +218,25 @@ def edge_objectives(start, end, cost_map, v_max):
     if np.linalg.norm(wind) >= v_max:
         return None  # wind exceeds airspeed
 
-    # Geometric properties
+    # Geometric properties (3D distance — altitude from DEM)
     dx = (end[0] - start[0]) * cost_map.resolution_m
     dy = (end[1] - start[1]) * cost_map.resolution_m
-    distance = np.sqrt(dx**2 + dy**2)
+    dz = cost_map.dem[end[1], end[0]] - cost_map.dem[start[1], start[0]]
+    distance = np.sqrt(dx**2 + dy**2 + dz**2)
     flight_dir = np.array([dx, dy]) / (distance + 1e-9)
 
     u_par   = np.dot(wind, flight_dir)          # along-track
     u_perp  = np.cross(wind, flight_dir)        # cross-track
 
-    vg = np.sqrt(max(v_max**2 - u_perp**2, 0)) + u_par
+    vg = np.sqrt(max(v_air**2 - u_perp**2, 0)) + u_par
     vg = max(vg, 0.1)
     t  = distance / vg
 
     # Map layer samples along edge
-    nav  = sample_layer(cost_map.nav_density,      start, end)
-    vsb  = sample_layer(cost_map.visibility_cost,  start, end)
-    tmp  = sample_layer(cost_map.temperature_cost, start, end)
+    nav  = sample_layer(cost_map.nav_density, start, end)
+    vsb  = sample_layer(cost_map.visibility,  start, end)
 
-    return (t, nav * t, vsb, tmp)  # (f1, f2, f3, f4) contributions
+    return (t, (1.0 - nav) * t, (1.0 - vsb) * t)  # (f1, f2, f3) contributions
 ```
 
 Layer sampling walks along the edge and averages values at intermediate cells:
