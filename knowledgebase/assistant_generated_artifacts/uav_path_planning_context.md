@@ -19,18 +19,14 @@ The problem is **multi-objective in nature**, solved as a **true multi-objective
 
 A path $P$ is an ordered sequence of waypoints:
 
-$$P = \langle w_0, w_1, \ldots, w_n \rangle, \quad w_i = (x_i, y_i) \in \mathbb{Z}^2$$
-
-Altitude at each waypoint is derived from terrain (2.5D planning):
-
-$$z_i = \text{dem}(x_i, y_i) + h_{\text{clearance}}$$
+$$P = \langle w_0, w_1, \ldots, w_n \rangle, \quad w_i = (x_i, y_i, z_i) \in \mathbb{R}^3$$
 
 Edge set:
 
 $$E(P) = \{(w_i, w_{i+1}) \mid i = 0, \ldots, n-1\}$$
 
 ### Space Representation
-**2.5D grid** — planning happens on a 2D raster grid. Altitude is derived from DEM, not a free variable. Full 3D can be added later if needed.
+**3D grid** — planning happens on a 3D raster grid. Altitude $z_i$ is a free decision variable subject to constraints.
 
 ---
 
@@ -71,10 +67,8 @@ $$f_2(P) = \sum_{e \in E(P)} \left(1 - \rho_{\text{nav}}(e)\right) \cdot t(e)$$
 
 Where navigation feature density combines visual richness and terrain roughness as **alternative** localization sources (UAV can use whichever works):
 
-$$\rho_{\text{nav}}(e) = \max\!\left(\rho_{\text{vis}}(e),\ \rho_{\text{flat}}(e)\right)$$
-
-- $\rho_{\text{vis}}(e) \in [0,1]$ — visual feature richness from satellite imagery (high = good)
-- $\rho_{\text{flat}}(e) \in [0,1]$ — terrain roughness from DEM rugosity (high = good)
+- $\phi_{\text{vis}}(e) \in [0,1]$ — visual feature richness from satellite imagery (high = good)
+- $\phi_{\text{ter}}(e) \in [0,1]$ — terrain roughness from DEM rugosity (high = good)
 - **max** is used because the two are alternative navigation methods — if one fails the other takes over. Geometric mean would be used if both were required simultaneously.
 - $1 - \rho_{\text{nav}}(e)$ is the **navigation quality deficit** — flying for a long time over feature-poor terrain accumulates a large deficit, which is penalised. Multiplied by $t(e)$ because deficit accrues over flight time.
 
@@ -337,6 +331,7 @@ Build controlled maps with known correct answers before using real geodata. Scen
 Each objective function tested independently with known inputs:
 - $f_1$: calm air, tailwind, headwind, crosswind cases
 - $f_2$: max of two navigation sources
+- $f_3$: visibility quality cases
 - Wind constraint: boundary cases at $\|\vec{u}\| < v_{\max}$ and $\geq v_{\max}$
 
 ### Pareto Front Validation
