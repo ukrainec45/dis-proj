@@ -3,8 +3,11 @@
 import numpy as np
 
 
-def generate_smoke_sources(n_sources, x_range, y_range, sigma_range=(500, 2500), seed=None):
-    rng = np.random.RandomState(seed)
+def generate_smoke_sources(n_sources, x_range, y_range, sigma_range=(500, 2500),
+                           seed=None, rng=None):
+    """Generate plume sources, optionally continuing an existing RNG stream."""
+    if rng is None:
+        rng = np.random.RandomState(seed)
     return [{"x0": rng.uniform(*x_range), "y0": rng.uniform(*y_range),
              "sigma": rng.uniform(*sigma_range), "min_vis": rng.uniform(0.2, 0.4)}
             for _ in range(n_sources)]

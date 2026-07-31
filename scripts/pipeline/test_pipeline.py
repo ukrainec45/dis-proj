@@ -1,8 +1,10 @@
 """Unit tests for dependency-light extracted notebook processing stages."""
 
 import numpy as np
+import pytest
 
-from .cell_vectors import to_planner_layers
+from .cell_vectors import (build_cell_vectors, derive_landing_sites,
+                           to_planner_layers)
 from .raster import create_grid, normalize
 from .visibility import (aggregate_to_planner_grid, combine_sources,
                          compute_visibility, gaussian_density,
@@ -29,6 +31,17 @@ def test_smoke_visibility_and_aggregation_are_bounded_and_deterministic():
     assert aggregate_to_planner_grid(visibility, 2).shape == (2, 2)
 
 
+def test_smoke_source_rng_can_continue_the_notebook_sequence():
+    rng = np.random.RandomState(42)
+    n_sources = rng.randint(3, 11)
+    actual = generate_smoke_sources(n_sources, (0, 10), (0, 10), rng=rng)
+    expected_rng = np.random.RandomState(42)
+    expected_n = expected_rng.randint(3, 11)
+    expected = generate_smoke_sources(expected_n, (0, 10), (0, 10), rng=expected_rng)
+    assert n_sources == expected_n
+    assert actual == expected
+
+
 def test_wind_helpers_and_layer_conversion():
     assert get_wind_speed(3, 4) == 5
     assert get_wind_direction(1, 0) == 90
@@ -39,3 +52,32 @@ def test_wind_helpers_and_layer_conversion():
     assert np.array_equal(layers["nav_density"], [[.5, .9]])
     assert layers["occupancy"].tolist() == [[False, True]]
     assert layers["wind_field"].shape == (1, 2, 2)
+
+
+def test_landing_sites_require_flat_visible_non_nfz_cells():
+    dem = np.array([[0.0, 0.0, 0.0], [0.0, 10.0, 0.0], [0.0, 0.0, 0.0]])
+    visibility = np.full((3, 3), 0.8)
+    visibility[0, 0] = 0.6
+    occupancy = np.zeros((3, 3), dtype=bool)
+    occupancy[2, 2] = True
+    sites = derive_landing_sites(dem, visibility, occupancy, resolution_m=10.0,
+                                 min_visibility=0.7, max_slope=0.05)
+    assert not sites[0, 0]
+    assert not sites[2, 2]
+    assert sites[0, 2]
+
+
+def test_nfz_intersection_blocks_a_cell_touched_at_its_boundary():
+    pytest.importorskip("shapely")
+    from shapely.geometry import box
+
+    class BoundaryNfz:
+        def intersects(self, cell):
+            return np.asarray([cell.intersects(box(1.0, 0.2, 1.2, 0.8))])
+
+    patches = [[np.zeros((2, 2, 1)), np.zeros((2, 2, 1))]]
+    cells = build_cell_vectors((0.0, 2.0, 0.0, 1.0), 1, 2, patches,
+                               np.ones((1, 2)), np.ones((1, 2)),
+                               np.ones((1, 2)), np.zeros((1, 2)),
+                               np.zeros((1, 2)), BoundaryNfz())
+    assert cells[0]["in_nfz"] and cells[1]["in_nfz"]

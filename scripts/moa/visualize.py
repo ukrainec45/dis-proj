@@ -138,7 +138,7 @@ def ascii_map(cost_map, path=None, marker=None):
             elif cost_map.nav_density[y, x] < 0.5:
                 line.append("~" if lake_label and labels[y, x] == lake_label
                             else "o")
-            elif cost_map.visibility[y, x] < 0.8:
+            elif cost_map.visibility[y, x] < 0.6:
                 line.append("f")
             else:
                 line.append(".")
@@ -295,7 +295,7 @@ def map_plot(cost_map, save_dir, weights=(0.5, 0.3, 0.2)):
                              mask=cost_map.occupancy)
     im = ax.imshow(nav, cmap="viridis", vmin=0, vmax=1,
                    extent=[-0.5, W - 0.5, H - 0.5, -0.5], aspect="equal")
-    low_visibility = cost_map.visibility < 0.8
+    low_visibility = cost_map.visibility < 0.6
     for y, x in np.argwhere(low_visibility):
         ax.add_patch(Rectangle((x - 0.5, y - 0.5), 1, 1,
                                facecolor=(0.35, 0.6, 1.0, 0.3),
@@ -344,7 +344,7 @@ def map_plot(cost_map, save_dir, weights=(0.5, 0.3, 0.2)):
     if low_visibility.any():
         handles.append(Patch(facecolor=(0.35, 0.6, 1.0, 0.3),
                              edgecolor="tab:blue", hatch="//",
-                             label="low-visibility zone  (visibility < 0.8)"))
+                             label="low-visibility zone  (visibility < 0.6)"))
     if cost_map.occupancy.any():
         handles.append(Patch(facecolor="white", edgecolor="0.45",
                              label="NFZ  (no-fly zone)"))

@@ -20,7 +20,7 @@ def read_image_aoi(path, aoi):
 
     left, bottom, right, top = aoi.total_bounds
     with rasterio.open(path) as src:
-        window = from_bounds(left, bottom, right, top, transform=src.transform)
+        window = from_bounds(left, bottom, right, top, transform=src.transform).round_offsets().round_lengths()
         subset = src.read(1, window=window)
         win_left, win_bottom, win_right, win_top = bounds(window, src.transform)
     return subset, [win_left, win_right, win_bottom, win_top]
@@ -39,23 +39,22 @@ def read_dem_aoi(dem_path, image_path, aoi):
     import rasterio
     from rasterio.enums import Resampling
     from rasterio.warp import reproject
-    from rasterio.windows import bounds, from_bounds
+    from rasterio.windows import bounds, from_bounds, transform as window_transform
 
     left, bottom, right, top = aoi.total_bounds
     with rasterio.open(image_path) as ref:
-        dst_crs, dst_transform = ref.crs, ref.transform
-        dst_width, dst_height = ref.width, ref.height
+        ref_transform = ref.transform
+        window = from_bounds(left, bottom, right, top, transform=ref_transform).round_offsets().round_lengths()
+        dst_crs, dst_transform = ref.crs, window_transform(window, ref_transform)
+        dst_width, dst_height = int(window.width), int(window.height)
     with rasterio.open(dem_path) as src:
         aligned = np.zeros((dst_height, dst_width), dtype=np.float32)
         reproject(source=src.read(1), destination=aligned,
                   src_transform=src.transform, src_crs=src.crs,
                   dst_transform=dst_transform, dst_crs=dst_crs,
                   resampling=Resampling.bilinear)
-    window = from_bounds(left, bottom, right, top, transform=dst_transform)
-    row_start, row_end = int(window.row_off), int(window.row_off + window.height)
-    col_start, col_end = int(window.col_off), int(window.col_off + window.width)
-    win_left, win_bottom, win_right, win_top = bounds(window, dst_transform)
-    return aligned[row_start:row_end, col_start:col_end], [win_left, win_right, win_bottom, win_top]
+    win_left, win_bottom, win_right, win_top = bounds(window, ref_transform)
+    return aligned, [win_left, win_right, win_bottom, win_top]
 
 
 def create_grid(image, cell_size_m, pixel_size_m):

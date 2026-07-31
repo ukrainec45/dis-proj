@@ -9,7 +9,8 @@ import argparse
 
 import numpy as np
 
-from .cell_vectors import build_cell_vectors, to_planner_layers
+from .cell_vectors import (build_cell_vectors, derive_landing_sites,
+                           to_planner_layers)
 from .nav_quality import compute_localization_metric, terrain_grid_quality
 from .raster import create_grid, get_path, read_dem_aoi, read_image_aoi
 from .visibility import (aggregate_to_planner_grid, combine_sources,
@@ -27,8 +28,9 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
 
     aoi = gpd.read_file(aoi_path).to_crs("EPSG:32635")
     nfz = gpd.read_file(nfz_path).to_crs("EPSG:32635") if nfz_path else None
-    points = (gpd.read_file(mission_points_path).to_crs("EPSG:32635")
-              if mission_points_path else None)
+    if mission_points_path is None:
+        raise ValueError("mission_points_path is required to export a runnable planner map")
+    points = gpd.read_file(mission_points_path).to_crs("EPSG:32635")
     paths = {band: get_path(r10m_dir, band) for band in ("B02", "B03", "B04", "B08")}
     if any(path is None for path in paths.values()):
         missing = [band for band, path in paths.items() if path is None]
@@ -56,9 +58,11 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     x_smoke = np.linspace(extent[0], extent[1], smoke_cols)
     y_smoke = np.linspace(extent[2], extent[3], smoke_rows)
     x_grid, y_grid = np.meshgrid(x_smoke, y_smoke)
+    # Keep one RNG stream, matching the original notebook sequence: draw the
+    # number of sources first, then draw all source parameters from that state.
     rng = np.random.RandomState(smoke_seed)
     sources = generate_smoke_sources(rng.randint(3, 11), (extent[0], extent[1]),
-                                     (extent[2], extent[3]), seed=smoke_seed)
+                                     (extent[2], extent[3]), rng=rng)
     density_stack = np.stack([gaussian_density(x_grid, y_grid, src["x0"], src["y0"], src["sigma"])
                               for src in sources])
     visibility = compute_visibility(density_stack, sources)
@@ -69,13 +73,15 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     cells = build_cell_vectors(extent, rows, cols, dem_grid, phi_vis, phi_ter,
                                visibility_planner, u_wind, v_wind, nfz)
     layers = to_planner_layers(cells, rows, cols)
-    if points is not None:
-        def point_to_cell(point):
-            x = int((point.x - extent[0]) * cols / (extent[1] - extent[0]))
-            y = int((extent[3] - point.y) * rows / (extent[3] - extent[2]))
-            return (int(np.clip(x, 0, cols - 1)), int(np.clip(y, 0, rows - 1)))
-        layers["start"] = np.asarray(point_to_cell(points.loc[points.role == "start"].geometry.iloc[0]))
-        layers["goal"] = np.asarray(point_to_cell(points.loc[points.role == "goal"].geometry.iloc[0]))
+    def point_to_cell(point):
+        x = int((point.x - extent[0]) * cols / (extent[1] - extent[0]))
+        y = int((extent[3] - point.y) * rows / (extent[3] - extent[2]))
+        return (int(np.clip(x, 0, cols - 1)), int(np.clip(y, 0, rows - 1)))
+    layers["start"] = np.asarray(point_to_cell(points.loc[points.role == "start"].geometry.iloc[0]))
+    layers["goal"] = np.asarray(point_to_cell(points.loc[points.role == "goal"].geometry.iloc[0]))
+    layers["landing_sites"] = derive_landing_sites(
+        layers["dem"], layers["visibility"], layers["occupancy"], cell_size_m
+    )
     np.savez_compressed(output_path, **layers, resolution_m=float(cell_size_m), extent=np.asarray(extent))
     return layers
 
@@ -86,7 +92,8 @@ def main(argv=None):
     parser.add_argument("--dem", required=True, help="DEM raster path")
     parser.add_argument("--aoi", required=True, help="AOI GeoJSON path")
     parser.add_argument("--nfz", help="optional no-fly-zone GeoJSON path")
-    parser.add_argument("--mission-points", help="optional start/goal GeoJSON with a role field")
+    parser.add_argument("--mission-points", required=True,
+                        help="start/goal GeoJSON with a role field")
     parser.add_argument("--output", required=True, help="output .npz file")
     parser.add_argument("--cell-size-m", type=float, default=1000)
     parser.add_argument("--pixel-size-m", type=float, default=10)

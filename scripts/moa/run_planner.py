@@ -59,6 +59,10 @@ def load_npz(path, start=None, goal=None):
         kwargs["goal"] = goal
     elif "goal" in data:
         kwargs["goal"] = tuple(int(v) for v in data["goal"])
+    else:
+        raise ValueError("map NPZ must include goal or receive --goal")
+    if "start" not in kwargs:
+        raise ValueError("map NPZ must include start or receive --start")
     return CostMap(**kwargs)
 
 

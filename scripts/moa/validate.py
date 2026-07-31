@@ -10,7 +10,7 @@ from . import synthetic
 from .domination import dominates, non_dominated_indices, weakly_dominates
 from .edge_costs import (CostMap, NEIGHBOR_OFFSETS, edge_objectives,
                          turn_is_feasible, turn_radius_m)
-from .heuristics import compute_heuristics
+from .heuristics import compute_heuristics, compute_time_to_landing_with_turns
 from .moa_star import EmoaStarLateBS, bs_check, bs_filter
 from .topsis import topsis
 
@@ -107,6 +107,13 @@ class TestEdgeCosts:
         cm2 = _tiny_map()
         calm = edge_objectives((0, 0), (1, 0), cm2, cm2.v_air, cm2.v_max)
         assert cross[0] > calm[0]
+
+    def test_north_wind_is_tailwind_for_a_northbound_grid_move(self):
+        cm = _tiny_map(wind=(0.0, 8.0))
+        northbound = edge_objectives((1, 1), (1, 0), cm, cm.v_air, cm.v_max)
+        cm_calm = _tiny_map()
+        calm = edge_objectives((1, 1), (1, 0), cm_calm, cm_calm.v_air, cm_calm.v_max)
+        assert northbound[0] < calm[0]
 
     def test_nav_deficit(self):
         cm_rich = _tiny_map(nav=1.0)
@@ -510,3 +517,14 @@ class TestFlightConstraints:
         expected = {tuple(np.round(np.asarray(c), 6))
                     for c in _brute_force_front(cm, cm.v_air, cm.v_max)}
         assert got == expected
+
+    def test_emergency_landing_respects_incoming_heading(self):
+        cm = _tiny_map()
+        cm.min_turn_radius_m = 20.0
+        cm.landing_sites = np.zeros(cm.shape, dtype=bool)
+        cm.landing_sites[0, 1] = True
+        landing_time = compute_time_to_landing_with_turns(cm, cm.v_air, cm.v_max)
+        # From (1,1), an eastward arrival cannot make the 90-degree turn north.
+        assert not np.isfinite(landing_time.get((1, 1, 1, 0), np.inf))
+        # An arrival already heading north can land directly.
+        assert np.isfinite(landing_time[(1, 1, 0, -1)])

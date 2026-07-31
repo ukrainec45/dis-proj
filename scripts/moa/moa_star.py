@@ -34,7 +34,8 @@ from bisect import bisect_right
 import numpy as np
 
 from .edge_costs import NEIGHBOR_OFFSETS, edge_objectives, turn_is_feasible
-from .heuristics import compute_heuristics, compute_time_to_landing
+from .heuristics import (compute_heuristics, compute_time_to_landing,
+                         compute_time_to_landing_with_turns)
 
 
 class Label:
@@ -100,9 +101,12 @@ class EmoaStarLateBS:
         self.goal = tuple(cost_map.goal)
         self.M = 3
         self.max_flight_time_s = cost_map.usable_flight_time_s
-        self.time_to_landing = (compute_time_to_landing(
-            cost_map, self.v_air, self.v_max
-        ) if cost_map.battery_energy_wh is not None else None)
+        if cost_map.battery_energy_wh is None:
+            self.time_to_landing = None
+        elif cost_map.min_turn_radius_m is None:
+            self.time_to_landing = compute_time_to_landing(cost_map, self.v_air, self.v_max)
+        else:
+            self.time_to_landing = compute_time_to_landing_with_turns(cost_map, self.v_air, self.v_max)
 
         # With a turn-radius constraint, an incoming heading is part of the
         # state.  Dominance across headings would be unsound because it could
@@ -172,7 +176,24 @@ class EmoaStarLateBS:
             return False
         if self.time_to_landing is None:
             return True
-        t_land = self.time_to_landing[l.vertex[1], l.vertex[0]]
+        if isinstance(self.time_to_landing, dict):
+            if self.cost_map.landing_sites[l.vertex[1], l.vertex[0]]:
+                t_land = 0.0
+            elif l.parent is None:
+                candidates = []
+                for u, c in self._successors(l):
+                    if c is not None:
+                        direction = (u[0] - l.vertex[0], u[1] - l.vertex[1])
+                        candidates.append(c[0] + self.time_to_landing.get(
+                            (u[0], u[1], *direction), np.inf
+                        ))
+                t_land = min(candidates, default=np.inf)
+            else:
+                direction = (l.vertex[0] - l.parent.vertex[0],
+                             l.vertex[1] - l.parent.vertex[1])
+                t_land = self.time_to_landing.get((*l.vertex, *direction), np.inf)
+        else:
+            t_land = self.time_to_landing[l.vertex[1], l.vertex[0]]
         return bool(np.isfinite(t_land) and l.g[0] + t_land <= self.max_flight_time_s + 1e-12)
 
     def _prune_reason(self, l):

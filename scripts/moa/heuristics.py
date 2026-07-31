@@ -11,7 +11,8 @@ import heapq
 
 import numpy as np
 
-from .edge_costs import NEIGHBOR_OFFSETS, M_OBJECTIVES, edge_objectives
+from .edge_costs import (NEIGHBOR_OFFSETS, M_OBJECTIVES, edge_objectives,
+                         turn_is_feasible)
 
 
 def _backward_dijkstra(cost_map, v_air, v_max, objective):
@@ -82,4 +83,45 @@ def compute_time_to_landing(cost_map, v_air, v_max):
             if nd < dist[ny, nx]:
                 dist[ny, nx] = nd
                 heapq.heappush(heap, (nd, nx, ny))
+    return dist
+
+
+def compute_time_to_landing_with_turns(cost_map, v_air, v_max):
+    """Exact landing-time lower bound indexed by cell and incoming heading.
+
+    A state ``(x, y, dx, dy)`` means the UAV reached ``(x, y)`` from
+    ``(x-dx, y-dy)``.  Reverse Dijkstra keeps only predecessor states whose
+    subsequent turn meets ``min_turn_radius_m``.  This makes the emergency
+    energy check use the same kinematics as forward planning.
+    """
+    if cost_map.landing_sites is None:
+        return None
+    H, W = cost_map.dem.shape
+    dist, heap = {}, []
+    for y, x in np.argwhere(cost_map.landing_sites & ~cost_map.occupancy):
+        for dx, dy in NEIGHBOR_OFFSETS:
+            key = (int(x), int(y), dx, dy)
+            dist[key] = 0.0
+            heapq.heappush(heap, (0.0, *key))
+    while heap:
+        d, x, y, out_dx, out_dy = heapq.heappop(heap)
+        if d > dist[(x, y, out_dx, out_dy)]:
+            continue
+        px, py = x - out_dx, y - out_dy
+        if not (0 <= px < W and 0 <= py < H):
+            continue
+        c = edge_objectives((px, py), (x, y), cost_map, v_air, v_max)
+        if c is None:
+            continue
+        for in_dx, in_dy in NEIGHBOR_OFFSETS:
+            ppx, ppy = px - in_dx, py - in_dy
+            if not (0 <= ppx < W and 0 <= ppy < H):
+                continue
+            if not turn_is_feasible((ppx, ppy), (px, py), (x, y), cost_map):
+                continue
+            predecessor = (px, py, in_dx, in_dy)
+            nd = d + c[0]
+            if nd < dist.get(predecessor, np.inf):
+                dist[predecessor] = nd
+                heapq.heappush(heap, (nd, *predecessor))
     return dist

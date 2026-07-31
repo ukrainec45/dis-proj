@@ -184,7 +184,9 @@ def edge_objectives(start, end, cost_map, v_air, v_max):
         return None
 
     dx = (end[0] - start[0]) * cost_map.resolution_m
-    dy = (end[1] - start[1]) * cost_map.resolution_m
+    # Raster rows increase southward, while wind_field stores [east, north].
+    # Convert the row displacement to the geographic northing convention.
+    dy = -(end[1] - start[1]) * cost_map.resolution_m
     dz = float(cost_map.dem[end[1], end[0]]) - float(cost_map.dem[start[1], start[0]])
     horizontal_distance = np.hypot(dx, dy)
     distance = np.sqrt(horizontal_distance * horizontal_distance + dz * dz)
