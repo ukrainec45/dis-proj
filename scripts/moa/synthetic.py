@@ -178,6 +178,25 @@ def tailwind_map(height=10, width=15, resolution=10.0):
                    v_air=15.0, v_max=12.0)
 
 
+def foggy_valley_map(height=3, width=5, resolution=10.0):
+    """Search-and-rescue route: short foggy valley versus clear ridge detour."""
+    dem, nav, vis, wind, occ = _base(height, width, resolution)
+    vis[1, 1:4] = 0.0
+    return CostMap(dem=dem, nav_density=nav, visibility=vis, wind_field=wind,
+                   occupancy=occ, resolution_m=resolution, start=(0, 1), goal=(4, 1),
+                   v_air=15.0, v_max=12.0)
+
+
+def mountain_pass_map(resolution=10.0):
+    """Mountain-response route where a high central ridge exceeds the ceiling."""
+    dem, nav, vis, wind, occ = _base(3, 3, resolution)
+    dem[1, 1] = 100.0
+    return CostMap(dem=dem, nav_density=nav, visibility=vis, wind_field=wind,
+                   occupancy=occ, resolution_m=resolution, start=(0, 2), goal=(2, 0),
+                   v_air=15.0, v_max=12.0,
+                   cruise_altitude_agl_m=20.0, z_max_m=50.0)
+
+
 def walled_map(height=7, width=7, resolution=10.0):
     """Full no-fly wall: no feasible path exists."""
     dem, nav, vis, wind, occ = _base(height, width, resolution)

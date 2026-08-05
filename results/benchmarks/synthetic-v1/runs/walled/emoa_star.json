@@ -1,0 +1,21 @@
+{
+  "details": {},
+  "feasible": false,
+  "method": "emoa_star",
+  "metrics": {
+    "coverage": {
+      "repeated_weighted_astar": null,
+      "time_only_astar": null
+    },
+    "hypervolume": 0.0
+  },
+  "n_expanded": 0,
+  "n_generated": 0,
+  "runtime_ms": 0.023900007363408804,
+  "scenario": "walled",
+  "scenario_reference_point": null,
+  "shared_non_dominated_front": [],
+  "solutions": [],
+  "source": "synthetic:walled",
+  "topsis_selections": {}
+}

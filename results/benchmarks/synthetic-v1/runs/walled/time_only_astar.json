@@ -1,0 +1,27 @@
+{
+  "details": {
+    "weights": [
+      1.0,
+      0.0,
+      0.0
+    ]
+  },
+  "feasible": false,
+  "method": "time_only_astar",
+  "metrics": {
+    "coverage": {
+      "emoa_star": null,
+      "repeated_weighted_astar": null
+    },
+    "hypervolume": 0.0
+  },
+  "n_expanded": 0,
+  "n_generated": 0,
+  "runtime_ms": 0.01960000372491777,
+  "scenario": "walled",
+  "scenario_reference_point": null,
+  "shared_non_dominated_front": [],
+  "solutions": [],
+  "source": "synthetic:walled",
+  "topsis_selections": {}
+}
