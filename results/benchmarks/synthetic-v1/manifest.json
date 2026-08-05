@@ -1,0 +1,138 @@
+{
+  "cases": [
+    {
+      "name": "lake",
+      "source": "synthetic:lake"
+    },
+    {
+      "name": "foggy_valley",
+      "source": "synthetic:foggy_valley"
+    },
+    {
+      "name": "tailwind",
+      "source": "synthetic:tailwind"
+    },
+    {
+      "name": "nfz",
+      "source": "synthetic:nfz"
+    },
+    {
+      "name": "mountain_pass",
+      "source": "synthetic:mountain_pass"
+    },
+    {
+      "name": "walled",
+      "source": "synthetic:walled"
+    },
+    {
+      "name": "terrain",
+      "source": "synthetic:terrain"
+    },
+    {
+      "name": "realistic",
+      "source": "synthetic:realistic"
+    }
+  ],
+  "methods": [
+    "emoa_star",
+    "time_only_astar",
+    "repeated_weighted_astar"
+  ],
+  "platform": "Windows-10-10.0.19045-SP0",
+  "python": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+  "repeated_weighted_astar_weights": [
+    [
+      0.0,
+      0.0,
+      1.0
+    ],
+    [
+      0.0,
+      0.25,
+      0.75
+    ],
+    [
+      0.0,
+      0.5,
+      0.5
+    ],
+    [
+      0.0,
+      0.75,
+      0.25
+    ],
+    [
+      0.0,
+      1.0,
+      0.0
+    ],
+    [
+      0.25,
+      0.0,
+      0.75
+    ],
+    [
+      0.25,
+      0.25,
+      0.5
+    ],
+    [
+      0.25,
+      0.5,
+      0.25
+    ],
+    [
+      0.25,
+      0.75,
+      0.0
+    ],
+    [
+      0.5,
+      0.0,
+      0.5
+    ],
+    [
+      0.5,
+      0.25,
+      0.25
+    ],
+    [
+      0.5,
+      0.5,
+      0.0
+    ],
+    [
+      0.75,
+      0.0,
+      0.25
+    ],
+    [
+      0.75,
+      0.25,
+      0.0
+    ],
+    [
+      1.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "run_id": "synthetic-v1",
+  "topsis_profiles": {
+    "balanced": [
+      0.5,
+      0.3,
+      0.2
+    ],
+    "emergency": [
+      0.7,
+      0.2,
+      0.1
+    ],
+    "localization_visibility": [
+      0.2,
+      0.5,
+      0.3
+    ]
+  }
+}
