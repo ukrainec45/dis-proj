@@ -136,6 +136,11 @@ class TestEdgeCosts:
         cm = _tiny_map(wind=(11.9, 0.0))
         assert edge_objectives((0, 0), (1, 0), cm, cm.v_air, cm.v_max) is not None
 
+    def test_wind_above_vmax_is_infeasible(self):
+        """A forecast value beyond the aircraft limit closes the corridor."""
+        cm = _tiny_map(wind=(12.1, 0.0))
+        assert edge_objectives((0, 0), (1, 0), cm, cm.v_air, cm.v_max) is None
+
     def test_occupied_target_infeasible(self):
         cm = _tiny_map()
         cm.occupancy[0, 1] = True  # cell (x=1, y=0)
@@ -421,6 +426,11 @@ class TestCostMapValidation:
         with pytest.raises(ValueError):
             CostMap(**cm.__dict__)
 
+    def test_start_equal_to_goal_returns_zero_cost_route(self):
+        cm = _tiny_map()
+        cm.goal = cm.start
+        assert EmoaStarLateBS(cm).solve() == [([cm.start], (0.0, 0.0, 0.0))]
+
 
 # ----------------------------------------------------------------------------
 # manuscript feasibility constraints
@@ -453,6 +463,15 @@ class TestFlightConstraints:
     def test_unattainable_crosswind_is_infeasible(self):
         cm = _tiny_map(wind=(0.0, 6.0))
         assert edge_objectives((0, 0), (1, 0), cm, 5.0, cm.v_max) is None
+
+    def test_headwind_below_wind_limit_can_still_prevent_progress(self):
+        """A rescue corridor is unsafe when its headwind exceeds airspeed.
+
+        This deliberately separates the meteorological wind limit from the
+        direction-dependent forward-progress requirement.
+        """
+        cm = _tiny_map(wind=(-11.9, 0.0))
+        assert edge_objectives((0, 0), (1, 0), cm, v_air=10.0, v_max=cm.v_max) is None
 
     def test_3d_wind_time_uses_unit_horizontal_track(self):
         cm = _tiny_map(wind=(0.0, 8.0))
@@ -528,3 +547,64 @@ class TestFlightConstraints:
         assert not np.isfinite(landing_time.get((1, 1, 1, 0), np.inf))
         # An arrival already heading north can land directly.
         assert np.isfinite(landing_time[(1, 1, 0, -1)])
+
+
+# ----------------------------------------------------------------------------
+# operational scenario regressions
+# ----------------------------------------------------------------------------
+class TestOperationalScenarios:
+    """Small real-world-shaped maps with deterministic behavioural oracles."""
+
+    def test_foggy_valley_and_clear_ridge_are_pareto_alternatives(self):
+        """SAR flight: a short foggy valley competes with a clear ridge route."""
+        H, W = 3, 5
+        dem = np.zeros((H, W))
+        nav = np.ones((H, W))
+        visibility = np.ones((H, W))
+        visibility[1, 1:4] = 0.0  # fog in the direct valley corridor
+        cm = CostMap(
+            dem=dem, nav_density=nav, visibility=visibility,
+            wind_field=np.zeros((H, W, 2)), occupancy=np.zeros((H, W), dtype=bool),
+            resolution_m=10.0, start=(0, 1), goal=(4, 1), v_air=15.0, v_max=12.0,
+        )
+        costs = np.asarray([cost for _, cost in EmoaStarLateBS(cm).solve()])
+        assert len(costs) >= 2
+        assert costs[:, 2].min() == pytest.approx(0.0)
+        assert costs[:, 2].max() > 0.0
+        assert any(a[0] < b[0] and a[2] > b[2] for a in costs for b in costs)
+
+    def test_ridge_under_altitude_ceiling_requires_a_pass(self):
+        """Mountain response: the high ridge is excluded, but a pass remains."""
+        H = W = 3
+        dem = np.zeros((H, W))
+        dem[1, 1] = 100.0
+        cm = CostMap(
+            dem=dem, nav_density=np.ones((H, W)), visibility=np.ones((H, W)),
+            wind_field=np.zeros((H, W, 2)), occupancy=np.zeros((H, W), dtype=bool),
+            resolution_m=10.0, start=(0, 2), goal=(2, 0), v_air=15.0, v_max=12.0,
+            cruise_altitude_agl_m=20.0, z_max_m=50.0,
+        )
+        sols = EmoaStarLateBS(cm).solve()
+        assert sols
+        assert all((1, 1) not in path for path, _ in sols)
+        assert all(cm.altitude_m(cell) <= cm.z_max_m for path, _ in sols for cell in path)
+
+    def test_featureless_water_and_feature_rich_shoreline_trade_time_for_navigation(self):
+        """Inspection flight: a lake crossing is fast; the shoreline is localisable."""
+        cm = synthetic.lake_map()
+        costs = np.asarray([cost for _, cost in EmoaStarLateBS(cm).solve()])
+        fastest = costs[np.argmin(costs[:, 0])]
+        safest_navigation = costs[np.argmin(costs[:, 1])]
+        assert fastest[0] < safest_navigation[0]
+        assert fastest[1] > safest_navigation[1]
+
+    def test_integrated_operational_map_preserves_all_hard_constraints(self):
+        """End-to-end mission: wind, NFZ, altitude, reserve, and VTOL turns."""
+        cm = synthetic.realistic_map()
+        sols = EmoaStarLateBS(cm).solve()
+        assert sols
+        for path, cost in sols:
+            assert cost[0] <= cm.usable_flight_time_s + 1e-9
+            assert all(not cm.is_occupied(cell) for cell in path)
+            assert all(cm.altitude_m(cell) <= cm.z_max_m for cell in path)
+            assert all(turn_is_feasible(a, b, c, cm) for a, b, c in zip(path, path[1:], path[2:]))
