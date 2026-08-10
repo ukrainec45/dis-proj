@@ -11,13 +11,14 @@ import hashlib
 import platform
 import shutil
 import sys
+import tracemalloc
 from pathlib import Path
 
 import numpy as np
 
 from .baselines import METHODS, QUARTER_SIMPLEX_WEIGHTS
 from .metrics import scenario_metrics
-from .report import (TOPSIS_PROFILES, result_json, write_json, write_scenario_figure,
+from .report import (TOPSIS_PROFILES, result_json, selected_paths, write_json, write_scenario_figure,
                      write_summary, write_summary_figure)
 from .scenarios import BUILTIN_SCENARIOS, builtin_cases, npz_case
 
@@ -40,7 +41,7 @@ def _sha256(path):
 
 
 def _case_manifest(case):
-    item = {"name": case.name, "source": case.source}
+    item = {"name": case.name, "source": case.source, "metadata": case.metadata or {}}
     source = Path(case.source)
     if source.is_file():
         item["sha256"] = _sha256(source)
@@ -57,37 +58,74 @@ def _summary_row(case, result, metric, reference):
         "runtime_ms": round(result.runtime_ms, 6),
         "n_expanded": result.n_expanded,
         "n_generated": result.n_generated,
+        "peak_memory_kib": result.peak_memory_kib,
         "solution_count": len(result.solutions),
         "best_f1_time_s": float(costs[:, 0].min()) if len(costs) else None,
         "best_f2_nav_deficit_s": float(costs[:, 1].min()) if len(costs) else None,
         "best_f3_visibility_deficit_s": float(costs[:, 2].min()) if len(costs) else None,
         "hypervolume": metric["hypervolume"],
+        "normalized_hypervolume": metric["normalized_hypervolume"],
+        "additive_epsilon": metric["additive_epsilon"],
+        "union_front_recall": metric["union_front_recall"],
         "reference_f1": None if reference is None else float(reference[0]),
         "reference_f2": None if reference is None else float(reference[1]),
         "reference_f3": None if reference is None else float(reference[2]),
     }
     for other, value in metric["coverage"].items():
         row[f"coverage_of_{other}"] = value
+    row.update(case.metadata or {})
     return row
 
 
-def run_cases(cases, output_dir):
+def _run_with_memory(method, cost_map, measure_memory=False):
+    """Time an uninstrumented run; optionally measure allocations in a probe run."""
+    result = method(cost_map)
+    if not measure_memory:
+        return result
+    tracemalloc.start()
+    try:
+        method(cost_map)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    result.peak_memory_kib = round(peak / 1024.0, 3)
+    return result
+
+
+def run_cases(cases, output_dir, measure_memory=False):
     """Run all methods and write complete artifacts below an existing directory."""
     output_dir = Path(output_dir)
     rows = []
     for case in cases:
-        results = [method(case.cost_map) for method in METHODS]
+        results = [_run_with_memory(method, case.cost_map, measure_memory) for method in METHODS]
         shared_front, reference, metrics = scenario_metrics(results)
         case_dir = output_dir / "runs" / case.name
+        time_only = next(result for result in results if result.method == "time_only_astar")
+        baseline_selections = selected_paths(time_only.solutions)
         for result in results:
             payload = result_json(result)
             payload["scenario"] = case.name
             payload["source"] = case.source
+            payload["case_metadata"] = case.metadata or {}
             payload["scenario_reference_point"] = None if reference is None else reference.tolist()
             payload["shared_non_dominated_front"] = shared_front.tolist()
             payload["metrics"] = metrics[result.method]
             write_json(case_dir / f"{result.method}.json", payload)
-            rows.append(_summary_row(case, result, metrics[result.method], reference))
+            row = _summary_row(case, result, metrics[result.method], reference)
+            for profile, selection in selected_paths(result.solutions).items():
+                baseline = baseline_selections.get(profile)
+                row.update({
+                    f"{profile}_f1": selection["cost"][0],
+                    f"{profile}_f2": selection["cost"][1],
+                    f"{profile}_f3": selection["cost"][2],
+                    f"{profile}_time_premium_vs_time_only": None if baseline is None else
+                        selection["cost"][0] - baseline["cost"][0],
+                    f"{profile}_nav_improvement_vs_time_only": None if baseline is None else
+                        baseline["cost"][1] - selection["cost"][1],
+                    f"{profile}_visibility_improvement_vs_time_only": None if baseline is None else
+                        baseline["cost"][2] - selection["cost"][2],
+                })
+            rows.append(row)
         write_scenario_figure(output_dir / "figures" / f"{case.name}.png", case, results)
     write_summary(output_dir / "summary.csv", rows)
     write_summary_figure(output_dir / "figures" / "summary.png", rows)

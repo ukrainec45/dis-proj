@@ -23,7 +23,7 @@ def _run_scalar(cost_map, method, weights):
     started = perf_counter()
     solutions = solver.solve()
     return PlannerResult(method, solutions, (perf_counter() - started) * 1000.0,
-                         solver.n_expanded, solver.n_generated,
+                         solver.n_expanded, solver.n_generated, None,
                          {"weights": list(weights)})
 
 
@@ -64,7 +64,7 @@ def run_repeated_weighted_astar(cost_map, weights=QUARTER_SIMPLEX_WEIGHTS):
         feasible_runs += int(run.feasible)
     return PlannerResult(
         "repeated_weighted_astar", _unique_non_dominated(all_solutions),
-        (perf_counter() - started) * 1000.0, total_expanded, total_generated,
+        (perf_counter() - started) * 1000.0, total_expanded, total_generated, None,
         {"weights": [list(weight) for weight in weights], "feasible_weight_runs": feasible_runs},
     )
 

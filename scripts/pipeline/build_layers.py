@@ -73,6 +73,10 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     cells = build_cell_vectors(extent, rows, cols, dem_grid, phi_vis, phi_ter,
                                visibility_planner, u_wind, v_wind, nfz)
     layers = to_planner_layers(cells, rows, cols)
+    # Preserve the two sources separately for thesis ablations.  The planner
+    # continues to consume only nav_density = max(visual_richness, rugosity).
+    layers["visual_richness"] = phi_vis.astype(float)
+    layers["rugosity"] = phi_ter.astype(float)
     def point_to_cell(point):
         x = int((point.x - extent[0]) * cols / (extent[1] - extent[0]))
         y = int((extent[3] - point.y) * rows / (extent[3] - extent[2]))
