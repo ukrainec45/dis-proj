@@ -41,6 +41,42 @@ def compute_localization_metric(grid_b4, grid_b8, window=7, alpha=0.9, beta=0.6)
     return 1.0 - (1.0 - alpha * geom_norm) * (1.0 - beta * tex_norm), geom_norm, tex_norm
 
 
+def compute_rgb_localization_metric(rgb_grid, window=7, alpha=0.9, beta=0.6):
+    """Estimate visual-localisation richness from RGB orthophoto patches.
+
+    Unlike :func:`compute_localization_metric`, this metric deliberately does
+    not use NDVI.  It combines Shi--Tomasi corner response and grayscale local
+    entropy, both available from ordinary RGB imagery.
+    """
+    from scipy.ndimage import sobel, uniform_filter
+    from skimage.filters.rank import entropy as sk_entropy
+    from skimage.morphology import disk
+
+    rows, cols = len(rgb_grid), len(rgb_grid[0])
+    geom_scores, tex_scores = np.zeros((rows, cols)), np.zeros((rows, cols))
+
+    def shi_tomasi_lambda_min(image):
+        ix, iy = sobel(image, axis=1), sobel(image, axis=0)
+        ixx, iyy, ixy = (uniform_filter(ix * ix, size=window),
+                          uniform_filter(iy * iy, size=window),
+                          uniform_filter(ix * iy, size=window))
+        trace, determinant = ixx + iyy, ixx * iyy - ixy**2
+        return 0.5 * (trace - np.sqrt(np.maximum(trace**2 - 4 * determinant, 0)))
+
+    for row in range(rows):
+        for col in range(cols):
+            rgb = np.asarray(rgb_grid[row][col], dtype=np.float32)
+            if rgb.ndim != 3 or rgb.shape[2] < 3:
+                raise ValueError("each RGB planner cell must have three bands")
+            grayscale = .299 * rgb[:, :, 0] + .587 * rgb[:, :, 1] + .114 * rgb[:, :, 2]
+            geom_scores[row, col] = np.max(shi_tomasi_lambda_min(grayscale))
+            grayscale_8bit = np.clip(grayscale, 0, 255).astype(np.uint8)
+            tex_scores[row, col] = np.mean(sk_entropy(grayscale_8bit, disk(5)))
+
+    geom_norm, tex_norm = robust_normalize(geom_scores), robust_normalize(tex_scores)
+    return 1.0 - (1.0 - alpha * geom_norm) * (1.0 - beta * tex_norm), geom_norm, tex_norm
+
+
 def compute_slope(dem, px_res=10):
     dy, dx = np.gradient(dem, px_res)
     return np.sqrt(dx**2 + dy**2)

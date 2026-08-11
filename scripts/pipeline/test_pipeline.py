@@ -5,10 +5,11 @@ import pytest
 
 from .cell_vectors import (build_cell_vectors, derive_landing_sites,
                            to_planner_layers)
-from .raster import create_grid, normalize
+from .nav_quality import compute_rgb_localization_metric
+from .raster import create_grid, normalize, read_rgb_aoi
 from .visibility import (aggregate_to_planner_grid, combine_sources,
                          compute_visibility, gaussian_density,
-                         generate_smoke_sources)
+                         generate_local_smoke_sources, generate_smoke_sources)
 from .wind import get_wind_direction, get_wind_speed
 
 
@@ -40,6 +41,13 @@ def test_smoke_source_rng_can_continue_the_notebook_sequence():
     expected = generate_smoke_sources(expected_n, (0, 10), (0, 10), rng=expected_rng)
     assert n_sources == expected_n
     assert actual == expected
+
+
+def test_local_smoke_sources_are_sparse_and_scaled_to_the_aoi():
+    sources = generate_local_smoke_sources((100.0, 1100.0), (0.0, 2000.0),
+                                           rng=np.random.RandomState(42))
+    assert 1 <= len(sources) <= 3
+    assert all(40.0 <= source["sigma"] <= 100.0 for source in sources)
 
 
 def test_wind_helpers_and_layer_conversion():
@@ -81,3 +89,33 @@ def test_nfz_intersection_blocks_a_cell_touched_at_its_boundary():
                                np.ones((1, 2)), np.zeros((1, 2)),
                                np.zeros((1, 2)), BoundaryNfz())
     assert cells[0]["in_nfz"] and cells[1]["in_nfz"]
+
+
+def test_rgb_localization_metric_is_bounded_and_uses_rgb_cells():
+    pytest.importorskip("skimage")
+    checkerboard = (np.indices((16, 16)).sum(axis=0) % 2 * 255).astype(np.uint8)
+    rgb = np.dstack((checkerboard, checkerboard, checkerboard))
+    metric, corners, texture = compute_rgb_localization_metric([[rgb, rgb], [rgb, rgb]])
+    assert metric.shape == (2, 2)
+    assert np.all((metric >= 0) & (metric <= 1))
+    assert np.all((corners >= 0) & (corners <= 1))
+    assert np.all((texture >= 0) & (texture <= 1))
+
+
+def test_read_rgb_aoi_reprojects_to_metric_aoi_grid(tmp_path):
+    rasterio = pytest.importorskip("rasterio")
+    from rasterio.transform import from_origin
+
+    class Aoi:
+        crs = "EPSG:32635"
+        total_bounds = (500000.0, 5500000.0, 500004.0, 5500004.0)
+
+    path = tmp_path / "rgb.tif"
+    with rasterio.open(path, "w", driver="GTiff", width=4, height=4, count=3,
+                       dtype="uint8", crs=Aoi.crs,
+                       transform=from_origin(500000.0, 5500004.0, 1.0, 1.0)) as dst:
+        dst.write(np.full((3, 4, 4), 100, dtype=np.uint8))
+    rgb, extent, transform = read_rgb_aoi(path, Aoi(), pixel_size_m=2.0)
+    assert rgb.shape == (2, 2, 3)
+    assert extent == [500000.0, 500004.0, 5500000.0, 5500004.0]
+    assert transform.a == 2.0 and transform.e == -2.0

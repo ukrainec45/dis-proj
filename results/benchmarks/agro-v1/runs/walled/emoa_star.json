@@ -1,0 +1,29 @@
+{
+  "case_metadata": {
+    "case_kind": "control",
+    "family": "walled"
+  },
+  "details": {},
+  "feasible": false,
+  "method": "emoa_star",
+  "metrics": {
+    "additive_epsilon": 0.0,
+    "coverage": {
+      "repeated_weighted_astar": null,
+      "time_only_astar": null
+    },
+    "hypervolume": 0.0,
+    "normalized_hypervolume": 0.0,
+    "union_front_recall": 1.0
+  },
+  "n_expanded": 0,
+  "n_generated": 0,
+  "peak_memory_kib": null,
+  "runtime_ms": 0.016699996194802225,
+  "scenario": "walled",
+  "scenario_reference_point": null,
+  "shared_non_dominated_front": [],
+  "solutions": [],
+  "source": "synthetic:walled",
+  "topsis_selections": {}
+}

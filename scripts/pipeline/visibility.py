@@ -13,6 +13,23 @@ def generate_smoke_sources(n_sources, x_range, y_range, sigma_range=(500, 2500),
             for _ in range(n_sources)]
 
 
+def generate_local_smoke_sources(x_range, y_range, rng):
+    """Generate a sparse, AOI-scaled synthetic visibility-degradation field.
+
+    The original notebook's 500--2500 m plume radii were suitable for a much
+    larger Sentinel-2 scene, but cover a small orthophoto AOI almost entirely.
+    Use one to three local plumes whose standard deviations are 4--10% of the
+    shorter AOI dimension, preserving clear regions for route trade-offs.
+    """
+    short_dimension = min(abs(x_range[1] - x_range[0]),
+                          abs(y_range[1] - y_range[0]))
+    if short_dimension <= 0:
+        raise ValueError("smoke-source ranges must span a positive AOI area")
+    return generate_smoke_sources(rng.randint(1, 4), x_range, y_range,
+                                  sigma_range=(.04 * short_dimension,
+                                               .10 * short_dimension), rng=rng)
+
+
 def gaussian_density(x, y, x0, y0, sigma):
     return np.exp(-((x - x0) ** 2 + (y - y0) ** 2) / (2.0 * sigma**2))
 

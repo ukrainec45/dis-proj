@@ -3,6 +3,9 @@
 Example:
     python -m scripts.pipeline.build_layers --r10m-dir ... --dem dem.tif \
         --aoi aoi.geojson --nfz no_fly_zone.geojson --output planning_layers.npz
+
+    python -m scripts.pipeline.build_layers --rgb-image orthophoto.tif --dem dem.tif \
+        --aoi aoi.geojson --output planning_layers.npz --pixel-size-m 1
 """
 
 import argparse
@@ -11,18 +14,20 @@ import numpy as np
 
 from .cell_vectors import (build_cell_vectors, derive_landing_sites,
                            to_planner_layers)
-from .nav_quality import compute_localization_metric, terrain_grid_quality
-from .raster import create_grid, get_path, read_dem_aoi, read_image_aoi
+from .nav_quality import (compute_localization_metric,
+                          compute_rgb_localization_metric, terrain_grid_quality)
+from .raster import (create_grid, get_path, read_dem_aoi, read_dem_grid,
+                     read_image_aoi, read_rgb_aoi)
 from .visibility import (aggregate_to_planner_grid, combine_sources,
                          compute_visibility, gaussian_density,
-                         generate_smoke_sources)
+                         generate_local_smoke_sources)
 from .wind import generate_synthetic_wind
 
 
 def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
                  mission_points_path=None,
                  cell_size_m=1000, pixel_size_m=10, smoke_cell_size_m=100,
-                 wind_seed=42, smoke_seed=42):
+                 wind_seed=42, smoke_seed=42, rgb_image_path=None):
     """Build and save the planner layers from the notebook's input products."""
     import geopandas as gpd
 
@@ -31,22 +36,29 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     if mission_points_path is None:
         raise ValueError("mission_points_path is required to export a runnable planner map")
     points = gpd.read_file(mission_points_path).to_crs("EPSG:32635")
-    paths = {band: get_path(r10m_dir, band) for band in ("B02", "B03", "B04", "B08")}
-    if any(path is None for path in paths.values()):
-        missing = [band for band, path in paths.items() if path is None]
-        raise FileNotFoundError(f"Sentinel-2 bands not found: {', '.join(missing)}")
-
-    b04, extent = read_image_aoi(paths["B04"], aoi)
-    b08, _ = read_image_aoi(paths["B08"], aoi)
-    b02, _ = read_image_aoi(paths["B02"], aoi)
-    b03, _ = read_image_aoi(paths["B03"], aoi)
-    dem, _ = read_dem_aoi(dem_path, paths["B04"], aoi)
-
-    b4_grid = create_grid(b04[:, :, np.newaxis], cell_size_m, pixel_size_m)
-    b8_grid = create_grid(b08[:, :, np.newaxis], cell_size_m, pixel_size_m)
+    if rgb_image_path is not None:
+        rgb, extent, transform = read_rgb_aoi(rgb_image_path, aoi, pixel_size_m)
+        rgb_grid = create_grid(rgb, cell_size_m, pixel_size_m)
+        dem = read_dem_grid(dem_path, aoi.crs, transform, rgb.shape[0], rgb.shape[1])
+        rows, cols = len(rgb_grid), len(rgb_grid[0])
+        phi_vis, _, _ = compute_rgb_localization_metric(rgb_grid)
+    else:
+        if r10m_dir is None:
+            raise ValueError("provide either r10m_dir or rgb_image_path")
+        paths = {band: get_path(r10m_dir, band) for band in ("B02", "B03", "B04", "B08")}
+        if any(path is None for path in paths.values()):
+            missing = [band for band, path in paths.items() if path is None]
+            raise FileNotFoundError(f"Sentinel-2 bands not found: {', '.join(missing)}")
+        b04, extent = read_image_aoi(paths["B04"], aoi)
+        b08, _ = read_image_aoi(paths["B08"], aoi)
+        b02, _ = read_image_aoi(paths["B02"], aoi)
+        b03, _ = read_image_aoi(paths["B03"], aoi)
+        dem, _ = read_dem_aoi(dem_path, paths["B04"], aoi)
+        b4_grid = create_grid(b04[:, :, np.newaxis], cell_size_m, pixel_size_m)
+        b8_grid = create_grid(b08[:, :, np.newaxis], cell_size_m, pixel_size_m)
+        rows, cols = len(b4_grid), len(b4_grid[0])
+        phi_vis, _, _ = compute_localization_metric(b4_grid, b8_grid)
     dem_grid = create_grid(dem[:, :, np.newaxis], cell_size_m, pixel_size_m)
-    rows, cols = len(b4_grid), len(b4_grid[0])
-    phi_vis, _, _ = compute_localization_metric(b4_grid, b8_grid)
     weights = {"slope": .25, "tri": .25, "tpi": .15, "std": .20, "roughness": .15}
     phi_ter = terrain_grid_quality(dem_grid, pixel_size_m, 7, weights)
     u_wind, v_wind = generate_synthetic_wind(rows, cols, base_speed=6.0,
@@ -58,11 +70,9 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     x_smoke = np.linspace(extent[0], extent[1], smoke_cols)
     y_smoke = np.linspace(extent[2], extent[3], smoke_rows)
     x_grid, y_grid = np.meshgrid(x_smoke, y_smoke)
-    # Keep one RNG stream, matching the original notebook sequence: draw the
-    # number of sources first, then draw all source parameters from that state.
     rng = np.random.RandomState(smoke_seed)
-    sources = generate_smoke_sources(rng.randint(3, 11), (extent[0], extent[1]),
-                                     (extent[2], extent[3]), rng=rng)
+    sources = generate_local_smoke_sources((extent[0], extent[1]),
+                                           (extent[2], extent[3]), rng=rng)
     density_stack = np.stack([gaussian_density(x_grid, y_grid, src["x0"], src["y0"], src["sigma"])
                               for src in sources])
     visibility = compute_visibility(density_stack, sources)
@@ -92,7 +102,9 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Build MOA* raster layers from Sentinel-2, DEM, NFZ, wind, and smoke inputs")
-    parser.add_argument("--r10m-dir", required=True, help="Sentinel-2 IMG_DATA/R10m directory")
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument("--r10m-dir", help="Sentinel-2 IMG_DATA/R10m directory")
+    source_group.add_argument("--rgb-image", help="three-band RGB orthophoto")
     parser.add_argument("--dem", required=True, help="DEM raster path")
     parser.add_argument("--aoi", required=True, help="AOI GeoJSON path")
     parser.add_argument("--nfz", help="optional no-fly-zone GeoJSON path")
@@ -105,7 +117,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     layers = build_layers(args.r10m_dir, args.dem, args.aoi, args.output, args.nfz,
                           args.mission_points, args.cell_size_m, args.pixel_size_m,
-                          args.smoke_cell_size_m)
+                          args.smoke_cell_size_m, rgb_image_path=args.rgb_image)
     print(f"wrote {args.output}: {layers['dem'].shape[0]}x{layers['dem'].shape[1]} planner grid")
     return 0
 
