@@ -13,19 +13,23 @@ def generate_smoke_sources(n_sources, x_range, y_range, sigma_range=(500, 2500),
             for _ in range(n_sources)]
 
 
-def generate_local_smoke_sources(x_range, y_range, rng):
+def generate_local_smoke_sources(x_range, y_range, rng, n_sources=None):
     """Generate a sparse, AOI-scaled synthetic visibility-degradation field.
 
     The original notebook's 500--2500 m plume radii were suitable for a much
     larger Sentinel-2 scene, but cover a small orthophoto AOI almost entirely.
-    Use one to three local plumes whose standard deviations are 4--10% of the
-    shorter AOI dimension, preserving clear regions for route trade-offs.
+    The caller may request an exact number of local plumes.  Otherwise one to
+    three plumes are sampled for backwards-compatible exploratory use.
     """
     short_dimension = min(abs(x_range[1] - x_range[0]),
                           abs(y_range[1] - y_range[0]))
     if short_dimension <= 0:
         raise ValueError("smoke-source ranges must span a positive AOI area")
-    return generate_smoke_sources(rng.randint(1, 4), x_range, y_range,
+    if n_sources is None:
+        n_sources = rng.randint(1, 4)
+    if n_sources < 1:
+        raise ValueError("n_sources must be positive")
+    return generate_smoke_sources(n_sources, x_range, y_range,
                                   sigma_range=(.04 * short_dimension,
                                                .10 * short_dimension), rng=rng)
 
@@ -55,3 +59,28 @@ def aggregate_to_planner_grid(layer, upscale):
             out[row, col] = np.mean(layer[row * upscale:(row + 1) * upscale,
                                          col * upscale:(col + 1) * upscale])
     return out
+
+
+def visibility_from_zones(extent, rows, cols, zones, zone_visibility):
+    """Return a planner-grid visibility layer from intersecting zone polygons.
+
+    A zone touching any part of a planner cell applies the configured value to
+    that cell.  The minimum operation makes the policy conservative if callers
+    later provide features with different visibility values.
+    """
+    from shapely.geometry import box
+
+    if not 0.0 <= zone_visibility <= 1.0:
+        raise ValueError("zone_visibility must be in [0, 1]")
+    if rows <= 0 or cols <= 0:
+        raise ValueError("planner grid dimensions must be positive")
+    visibility = np.ones((rows, cols), dtype=float)
+    xmin, xmax, ymin, ymax = extent
+    cell_width, cell_height = (xmax - xmin) / cols, (ymax - ymin) / rows
+    for row in range(rows):
+        y_top, y_bottom = ymax - row * cell_height, ymax - (row + 1) * cell_height
+        for col in range(cols):
+            x_left, x_right = xmin + col * cell_width, xmin + (col + 1) * cell_width
+            if zones.intersects(box(x_left, y_bottom, x_right, y_top)).any():
+                visibility[row, col] = min(visibility[row, col], zone_visibility)
+    return visibility

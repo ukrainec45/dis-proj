@@ -20,19 +20,24 @@ from .raster import (create_grid, get_path, read_dem_aoi, read_dem_grid,
                      read_image_aoi, read_rgb_aoi)
 from .visibility import (aggregate_to_planner_grid, combine_sources,
                          compute_visibility, gaussian_density,
-                         generate_local_smoke_sources)
+                         generate_local_smoke_sources, visibility_from_zones)
 from .wind import generate_synthetic_wind
 
 
 def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
                  mission_points_path=None,
                  cell_size_m=1000, pixel_size_m=10, smoke_cell_size_m=100,
-                 wind_seed=42, smoke_seed=42, rgb_image_path=None):
+                 wind_seed=42, smoke_seed=42, rgb_image_path=None,
+                 visibility_zones_path=None, zone_visibility=None,
+                 synthetic_smoke_sources=None, synthetic_smoke_min_visibility=None):
     """Build and save the planner layers from the notebook's input products."""
     import geopandas as gpd
 
     aoi = gpd.read_file(aoi_path).to_crs("EPSG:32635")
     nfz = gpd.read_file(nfz_path).to_crs("EPSG:32635") if nfz_path else None
+    zones = _read_visibility_zones(visibility_zones_path) if visibility_zones_path else None
+    _validate_visibility_options(zones, zone_visibility, synthetic_smoke_sources,
+                                 synthetic_smoke_min_visibility)
     if mission_points_path is None:
         raise ValueError("mission_points_path is required to export a runnable planner map")
     points = gpd.read_file(mission_points_path).to_crs("EPSG:32635")
@@ -65,20 +70,32 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
                                                base_dir_deg=240, perturbation_scale=2.5,
                                                smoothness=1.5, seed=wind_seed)
 
-    mission_width, mission_height = extent[1] - extent[0], extent[3] - extent[2]
-    smoke_rows, smoke_cols = int(round(mission_height / smoke_cell_size_m)), int(round(mission_width / smoke_cell_size_m))
-    x_smoke = np.linspace(extent[0], extent[1], smoke_cols)
-    y_smoke = np.linspace(extent[2], extent[3], smoke_rows)
-    x_grid, y_grid = np.meshgrid(x_smoke, y_smoke)
-    rng = np.random.RandomState(smoke_seed)
-    sources = generate_local_smoke_sources((extent[0], extent[1]),
-                                           (extent[2], extent[3]), rng=rng)
-    density_stack = np.stack([gaussian_density(x_grid, y_grid, src["x0"], src["y0"], src["sigma"])
-                              for src in sources])
-    visibility = compute_visibility(density_stack, sources)
-    visibility_planner = aggregate_to_planner_grid(visibility, int(cell_size_m / smoke_cell_size_m))
-    if visibility_planner.shape != (rows, cols):
-        raise ValueError("AOI dimensions do not produce matching image and smoke planner grids")
+    if zones is not None:
+        visibility_planner = visibility_from_zones(extent, rows, cols, zones, zone_visibility)
+        visibility_source = "zones"
+    elif synthetic_smoke_sources is not None:
+        mission_width, mission_height = extent[1] - extent[0], extent[3] - extent[2]
+        smoke_rows, smoke_cols = (int(round(mission_height / smoke_cell_size_m)),
+                                  int(round(mission_width / smoke_cell_size_m)))
+        x_smoke = np.linspace(extent[0], extent[1], smoke_cols)
+        y_smoke = np.linspace(extent[2], extent[3], smoke_rows)
+        x_grid, y_grid = np.meshgrid(x_smoke, y_smoke)
+        rng = np.random.RandomState(smoke_seed)
+        sources = generate_local_smoke_sources((extent[0], extent[1]),
+                                               (extent[2], extent[3]), rng=rng,
+                                               n_sources=synthetic_smoke_sources)
+        for source in sources:
+            source["min_vis"] = synthetic_smoke_min_visibility
+        density_stack = np.stack([gaussian_density(x_grid, y_grid, src["x0"], src["y0"], src["sigma"])
+                                  for src in sources])
+        visibility = compute_visibility(density_stack, sources)
+        visibility_planner = aggregate_to_planner_grid(visibility, int(cell_size_m / smoke_cell_size_m))
+        if visibility_planner.shape != (rows, cols):
+            raise ValueError("AOI dimensions do not produce matching image and smoke planner grids")
+        visibility_source = "synthetic_smoke"
+    else:
+        visibility_planner = np.ones((rows, cols), dtype=float)
+        visibility_source = "clear"
 
     cells = build_cell_vectors(extent, rows, cols, dem_grid, phi_vis, phi_ter,
                                visibility_planner, u_wind, v_wind, nfz)
@@ -96,8 +113,45 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     layers["landing_sites"] = derive_landing_sites(
         layers["dem"], layers["visibility"], layers["occupancy"], cell_size_m
     )
-    np.savez_compressed(output_path, **layers, resolution_m=float(cell_size_m), extent=np.asarray(extent))
+    np.savez_compressed(output_path, **layers, resolution_m=float(cell_size_m), extent=np.asarray(extent),
+                        visibility_source=np.asarray(visibility_source),
+                        visibility_zone_value=np.asarray(np.nan if zone_visibility is None else zone_visibility))
     return layers
+
+
+def _read_visibility_zones(path):
+    """Load valid visibility polygons, assuming EPSG:32635 only when absent."""
+    import geopandas as gpd
+
+    zones = gpd.read_file(path)
+    if zones.empty or zones.geometry.is_empty.any():
+        raise ValueError("visibility zones must contain non-empty geometries")
+    allowed = {"Polygon", "MultiPolygon"}
+    invalid = ~zones.geometry.geom_type.isin(allowed)
+    if invalid.any():
+        raise ValueError("visibility zones must contain only Polygon or MultiPolygon geometries")
+    if zones.crs is None:
+        zones = zones.set_crs("EPSG:32635", allow_override=True)
+    return zones.to_crs("EPSG:32635")
+
+
+def _validate_visibility_options(zones, zone_visibility, synthetic_smoke_sources,
+                                 synthetic_smoke_min_visibility):
+    if zones is not None:
+        if zone_visibility is None:
+            raise ValueError("zone_visibility is required when visibility_zones_path is supplied")
+        if synthetic_smoke_sources is not None or synthetic_smoke_min_visibility is not None:
+            raise ValueError("visibility zones and synthetic smoke cannot be used together")
+        if not 0.0 <= zone_visibility <= 1.0:
+            raise ValueError("zone_visibility must be in [0, 1]")
+        return
+    if (synthetic_smoke_sources is None) != (synthetic_smoke_min_visibility is None):
+        raise ValueError("synthetic_smoke_sources and synthetic_smoke_min_visibility must be supplied together")
+    if synthetic_smoke_sources is not None:
+        if synthetic_smoke_sources < 1:
+            raise ValueError("synthetic_smoke_sources must be positive")
+        if not 0.0 <= synthetic_smoke_min_visibility <= 1.0:
+            raise ValueError("synthetic_smoke_min_visibility must be in [0, 1]")
 
 
 def main(argv=None):
@@ -108,6 +162,13 @@ def main(argv=None):
     parser.add_argument("--dem", required=True, help="DEM raster path")
     parser.add_argument("--aoi", required=True, help="AOI GeoJSON path")
     parser.add_argument("--nfz", help="optional no-fly-zone GeoJSON path")
+    parser.add_argument("--visibility-zones", help="polygon GeoJSON defining low-visibility areas")
+    parser.add_argument("--zone-visibility", type=float,
+                        help="visibility [0, 1] applied to all visibility-zone polygons")
+    parser.add_argument("--synthetic-smoke-sources", type=int,
+                        help="number of AOI-scaled synthetic smoke sources")
+    parser.add_argument("--synthetic-smoke-min-visibility", type=float,
+                        help="visibility [0, 1] at each synthetic smoke-source centre")
     parser.add_argument("--mission-points", required=True,
                         help="start/goal GeoJSON with a role field")
     parser.add_argument("--output", required=True, help="output .npz file")
@@ -117,7 +178,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     layers = build_layers(args.r10m_dir, args.dem, args.aoi, args.output, args.nfz,
                           args.mission_points, args.cell_size_m, args.pixel_size_m,
-                          args.smoke_cell_size_m, rgb_image_path=args.rgb_image)
+                          args.smoke_cell_size_m, rgb_image_path=args.rgb_image,
+                          visibility_zones_path=args.visibility_zones,
+                          zone_visibility=args.zone_visibility,
+                          synthetic_smoke_sources=args.synthetic_smoke_sources,
+                          synthetic_smoke_min_visibility=args.synthetic_smoke_min_visibility)
     print(f"wrote {args.output}: {layers['dem'].shape[0]}x{layers['dem'].shape[1]} planner grid")
     return 0
 

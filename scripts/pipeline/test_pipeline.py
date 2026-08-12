@@ -9,7 +9,9 @@ from .nav_quality import compute_rgb_localization_metric
 from .raster import create_grid, normalize, read_rgb_aoi
 from .visibility import (aggregate_to_planner_grid, combine_sources,
                          compute_visibility, gaussian_density,
-                         generate_local_smoke_sources, generate_smoke_sources)
+                         generate_local_smoke_sources, generate_smoke_sources,
+                         visibility_from_zones)
+from .build_layers import _read_visibility_zones, _validate_visibility_options
 from .wind import get_wind_direction, get_wind_speed
 
 
@@ -48,6 +50,51 @@ def test_local_smoke_sources_are_sparse_and_scaled_to_the_aoi():
                                            rng=np.random.RandomState(42))
     assert 1 <= len(sources) <= 3
     assert all(40.0 <= source["sigma"] <= 100.0 for source in sources)
+
+
+def test_visibility_zones_degrade_intersecting_cells_with_conservative_overlap():
+    pytest.importorskip("geopandas")
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    zones = gpd.GeoDataFrame(geometry=[box(.8, .8, 1.2, 1.2)], crs="EPSG:32635")
+    visibility = visibility_from_zones((0, 2, 0, 2), 2, 2, zones, .35)
+    assert np.array_equal(visibility, np.full((2, 2), .35))
+    assert np.array_equal(visibility_from_zones((0, 2, 0, 2), 2, 2,
+                                                 zones.iloc[0:0], .35), np.ones((2, 2)))
+
+
+def test_visibility_options_default_to_clear_and_reject_invalid_combinations():
+    _validate_visibility_options(None, None, None, None)
+    with pytest.raises(ValueError, match="required"):
+        _validate_visibility_options(object(), None, None, None)
+    with pytest.raises(ValueError, match="together"):
+        _validate_visibility_options(None, None, 1, None)
+    with pytest.raises(ValueError, match="cannot"):
+        _validate_visibility_options(object(), .3, 1, .2)
+
+
+def test_visibility_zone_loader_assumes_utm_when_crs_is_missing(monkeypatch):
+    pytest.importorskip("geopandas")
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    zones = gpd.GeoDataFrame(geometry=[box(500000, 5500000, 500010, 5500010)])
+    monkeypatch.setattr(gpd, "read_file", lambda _: zones)
+    loaded = _read_visibility_zones("zones.geojson")
+    assert str(loaded.crs) == "EPSG:32635"
+
+
+def test_visibility_zone_loader_reprojects_a_declared_crs(monkeypatch):
+    pytest.importorskip("geopandas")
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    zones = gpd.GeoDataFrame(geometry=[box(28.0, 50.0, 28.01, 50.01)], crs="EPSG:4326")
+    monkeypatch.setattr(gpd, "read_file", lambda _: zones)
+    loaded = _read_visibility_zones("zones.geojson")
+    assert str(loaded.crs) == "EPSG:32635"
+    assert loaded.total_bounds[0] > 500000
 
 
 def test_wind_helpers_and_layer_conversion():
