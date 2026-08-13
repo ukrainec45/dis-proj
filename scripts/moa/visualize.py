@@ -28,6 +28,7 @@ import numpy as np
 from .domination import non_dominated_indices
 from .heuristics import compute_heuristics
 from .moa_star import EmoaStarLateBS
+from .route_results import save_route_results, write_characteristics_csv
 from .topsis import topsis
 from . import synthetic
 
@@ -413,10 +414,17 @@ def map_plot(cost_map, save_dir, weights=(0.5, 0.3, 0.2)):
     ax3.set_xlabel("column x"); ax3.set_ylabel("row y")
 
     os.makedirs(save_dir, exist_ok=True)
+    results_path = os.path.join(save_dir, "planner_results.npz")
+    results = save_route_results(
+        results_path, cost_map, solutions, weights,
+        n_expanded=solver.n_expanded, n_generated=solver.n_generated)
+    write_characteristics_csv(
+        os.path.join(save_dir, "route_characteristics.csv"), results)
     out = os.path.join(save_dir, f"moa_{cost_map.shape[0]}x{cost_map.shape[1]}.png")
     fig.savefig(out, dpi=130, bbox_inches="tight")
     print(f"wrote {out}  ({len(solutions)} Pareto paths, "
           f"{solver.n_expanded} expansions / {solver.n_generated} generations)")
+    print(f"wrote {results_path} and route_characteristics.csv")
     return 0
 
 
