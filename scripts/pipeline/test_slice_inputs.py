@@ -24,7 +24,7 @@ def test_route_context_uses_saved_artifacts(tmp_path):
         map_path, dem=cost_map.dem, nav_density=cost_map.nav_density,
         visibility=cost_map.visibility, wind_field=cost_map.wind_field,
         occupancy=cost_map.occupancy, resolution_m=cost_map.resolution_m,
-        start=cost_map.start, goal=cost_map.goal)
+        start=cost_map.start, goal=cost_map.goal, extent=np.asarray([0, 3, 0, 3]))
     result_path = tmp_path / "results.npz"
     save_route_results(result_path, cost_map, solutions)
     rows, cols = cost_map.shape
@@ -34,7 +34,8 @@ def test_route_context_uses_saved_artifacts(tmp_path):
         rgb_cells=np.zeros((rows, cols, 2, 2, 3), dtype=np.uint8),
         dem_cells=np.broadcast_to(cost_map.dem[:, :, None, None],
                                   (rows, cols, 2, 2)).copy(),
-        cell_size_m=np.asarray(cost_map.resolution_m))
+        cell_size_m=np.asarray(cost_map.resolution_m),
+        extent=np.asarray([0, 3, 0, 3]))
     output = tmp_path / "context.png"
 
     written, selected = plot_route_context(

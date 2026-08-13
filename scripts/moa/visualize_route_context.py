@@ -19,8 +19,8 @@ def _mosaic(cells):
     return transposed.reshape(rows * cell_h, cols * cell_w, *cells.shape[4:])
 
 
-def _overlay_route(axis, path, cell_pixels, label_cells=False):
-    xy = (path.astype(float) + 0.5) * cell_pixels
+def _overlay_route(axis, path, label_cells=False):
+    xy = path.astype(float)
     axis.plot(xy[:, 0], xy[:, 1], color="black", linewidth=5, alpha=0.35, zorder=3)
     axis.plot(xy[:, 0], xy[:, 1], color="yellow", linewidth=2.2, zorder=4)
     axis.scatter(xy[:, 0], xy[:, 1], s=13, color="yellow", edgecolor="black",
@@ -47,14 +47,27 @@ def plot_route_context(map_path, results_path, cells_path, output_path,
 
     cost_map = load_npz(map_path)
     results = load_route_results(results_path)
+    with np.load(map_path, allow_pickle=False) as data:
+        if "extent" not in data:
+            raise ValueError("planner map has no extent metadata; rebuild it with build_layers")
+        map_extent = np.asarray(data["extent"], dtype=float)
     with np.load(cells_path, allow_pickle=False) as data:
         rgb_cells = data["rgb_cells"]
         dem_cells = data["dem_cells"]
         cell_size_m = float(data["cell_size_m"])
+        if "extent" not in data:
+            raise ValueError("cell slices have no extent metadata; rebuild them with slice_inputs")
+        cells_extent = np.asarray(data["extent"], dtype=float)
     if rgb_cells.shape[:2] != cost_map.shape or dem_cells.shape[:2] != cost_map.shape:
         raise ValueError("cell slices and planner map have different grid shapes")
     if not np.isclose(cell_size_m, cost_map.resolution_m):
         raise ValueError("cell slices and planner map have different cell sizes")
+    if map_extent.shape != (4,) or not np.allclose(cells_extent, map_extent,
+                                                   rtol=0.0, atol=1e-3):
+        raise ValueError("cell slices and planner map have different geographic extents")
+    if (not np.array_equal(results["start"], np.asarray(cost_map.start)) or
+            not np.array_equal(results["goal"], np.asarray(cost_map.goal))):
+        raise ValueError("saved routes and planner map have different start/goal cells")
 
     selected = int(results["topsis_best"]) if route_id is None else int(route_id)
     if not 0 <= selected < len(results["path_lengths"]):
@@ -62,14 +75,23 @@ def plot_route_context(map_path, results_path, cells_path, output_path,
     path = route_path(results, selected)
     rgb = _mosaic(rgb_cells)
     dem = _mosaic(dem_cells)
-    preview_pixels = rgb_cells.shape[2]
     rows, cols = cost_map.shape
+    shared_extent = (-0.5, cols - 0.5, rows - 0.5, -0.5)
 
-    fig, axes = plt.subplots(1, 3, figsize=(20, 7), constrained_layout=True)
+    # Dedicated colour-bar columns keep all three map axes exactly the same size.
+    fig = plt.figure(figsize=(21, 7.5))
+    grid = fig.add_gridspec(1, 5, width_ratios=(1, 0.045, 1, 1, 0.045),
+                            left=0.04, right=0.98, bottom=0.08, top=0.91,
+                            wspace=0.15)
+    axes = [fig.add_subplot(grid[0, 0])]
+    axes.append(fig.add_subplot(grid[0, 2], sharex=axes[0], sharey=axes[0]))
+    axes.append(fig.add_subplot(grid[0, 3], sharex=axes[0], sharey=axes[0]))
+    nav_cax = fig.add_subplot(grid[0, 1])
+    dem_cax = fig.add_subplot(grid[0, 4])
     axis = axes[0]
     nav = np.ma.masked_array(cost_map.nav_density, mask=cost_map.occupancy)
     image = axis.imshow(nav, cmap="viridis", vmin=0, vmax=1,
-                        extent=(-0.5, cols - 0.5, rows - 0.5, -0.5))
+                        extent=shared_extent, aspect="equal")
     for row, col in np.argwhere(cost_map.visibility < 0.6):
         axis.add_patch(Rectangle((col - 0.5, row - 0.5), 1, 1,
                                  facecolor=(0.35, 0.6, 1, 0.25),
@@ -81,34 +103,34 @@ def plot_route_context(map_path, results_path, cells_path, output_path,
     axis.set(title=f"Planner result: P{selected}\nbackground = navigation density",
              xlabel="column", ylabel="row")
     axis.set_xticks(np.arange(cols)); axis.set_yticks(np.arange(rows))
-    axis.grid(True, color="white", alpha=0.25, linewidth=0.35)
-    fig.colorbar(image, ax=axis, fraction=0.046, label="navigation density")
+    fig.colorbar(image, cax=nav_cax, label="navigation density")
 
-    axes[1].imshow(rgb)
-    _overlay_route(axes[1], path, preview_pixels, label_route_cells)
+    axes[1].imshow(rgb, extent=shared_extent, aspect="equal")
+    _overlay_route(axes[1], path, label_route_cells)
     axes[1].set_title("Orthophoto cells\nyellow = cells used by route")
 
-    dem_image = axes[2].imshow(dem, cmap="terrain")
-    _overlay_route(axes[2], path, preview_pixels, label_route_cells)
+    dem_image = axes[2].imshow(dem, cmap="terrain", extent=shared_extent,
+                               aspect="equal")
+    _overlay_route(axes[2], path, label_route_cells)
     axes[2].set_title("Aligned DEM cells\nyellow = cells used by route")
-    fig.colorbar(dem_image, ax=axes[2], fraction=0.046, label="elevation MSL (m)")
+    fig.colorbar(dem_image, cax=dem_cax, label="elevation MSL (m)")
 
-    for axis in axes[1:]:
-        axis.set_xlim(0, cols * preview_pixels)
-        axis.set_ylim(rows * preview_pixels, 0)
-        axis.set_xticks(np.arange(cols + 1) * preview_pixels, minor=True)
-        axis.set_yticks(np.arange(rows + 1) * preview_pixels, minor=True)
-        axis.grid(which="minor", color="white", alpha=0.25, linewidth=0.35)
-        axis.set_xticks((np.arange(cols) + 0.5) * preview_pixels)
-        axis.set_yticks((np.arange(rows) + 0.5) * preview_pixels)
-        # Label only moderate grids; route labels remain available for large ones.
-        if max(rows, cols) <= 40:
-            axis.set_xticklabels(np.arange(cols), fontsize=6)
-            axis.set_yticklabels(np.arange(rows), fontsize=6)
-        else:
-            axis.set_xticklabels([]); axis.set_yticklabels([])
-        axis.set_xlabel("planner cells (columns)")
-        axis.set_ylabel("planner cells (rows)")
+    for axis in axes:
+        axis.set_xlim(-0.5, cols - 0.5)
+        axis.set_ylim(rows - 0.5, -0.5)
+        axis.set_xticks(np.arange(-0.5, cols, 1), minor=True)
+        axis.set_yticks(np.arange(-0.5, rows, 1), minor=True)
+        axis.grid(which="minor", color="white", alpha=0.3, linewidth=0.35)
+        major_step = max(1, int(np.ceil(max(rows, cols) / 20)))
+        axis.set_xticks(np.arange(0, cols, major_step))
+        axis.set_yticks(np.arange(0, rows, major_step))
+        # Major ticks label cell centres.  Drawing a grid for them would put
+        # misleading lines through selected centres; only minor boundary ticks
+        # are allowed to produce grid lines.
+        axis.grid(False, which="major")
+        axis.tick_params(labelsize=7)
+        axis.set_xlabel("planner column")
+        axis.set_ylabel("planner row")
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
