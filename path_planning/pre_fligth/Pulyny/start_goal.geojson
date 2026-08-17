@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "start_goal",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::32635" } },
+"features": [
+{"type":"Feature","properties":{"id":null,"role":"start"},"geometry":{"type":"MultiPoint","coordinates":[[587199.485286941169761,5593501.958143630996346]]}},
+{"type":"Feature","properties":{"id":null,"role":"goal"},"geometry":{"type":"MultiPoint","coordinates":[[591975.819931182079017,5589639.620891222730279]]}}
+]
+}

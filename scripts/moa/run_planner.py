@@ -15,12 +15,14 @@ selects one path with TOPSIS. The map NPZ must contain layers compatible with
 
 import argparse
 import json
+from pathlib import Path
 import sys
 
 import numpy as np
 
 from .edge_costs import CostMap
 from .moa_star import EmoaStarLateBS
+from .route_results import save_route_results, write_characteristics_csv
 from .topsis import topsis
 from . import synthetic
 
@@ -77,6 +79,8 @@ def main(argv=None):
     parser.add_argument("--v-max", type=float, help="max wind (m/s)")
     parser.add_argument("--weights", default="0.5,0.3,0.2",
                         help="TOPSIS objective weights (comma-separated)")
+    parser.add_argument("--results-output",
+                        help="saved Pareto routes NPZ (default: MAP_routes.npz)")
     args = parser.parse_args(argv)
 
     if args.scenario:
@@ -116,6 +120,20 @@ def main(argv=None):
               f"{len(path):>6} {closeness[idx]:>6.3f} {'*' if idx == best else '':>5}")
     print("\nSelected path (TOPSIS, C = {:.3f}):".format(closeness[best]))
     print(json.dumps([list(p) for p in solutions[best][0]]))
+    if args.results_output:
+        result_path = Path(args.results_output)
+    elif args.map:
+        map_path = Path(args.map)
+        result_path = map_path.with_name(f"{map_path.stem}_routes.npz")
+    else:
+        result_path = Path("results") / f"{args.scenario}_routes.npz"
+    results = save_route_results(
+        result_path, cost_map, solutions, weights,
+        n_expanded=solver.n_expanded, n_generated=solver.n_generated)
+    csv_path = result_path.with_name(f"{result_path.stem}_characteristics.csv")
+    write_characteristics_csv(csv_path, results)
+    print(f"Saved reusable routes: {result_path}")
+    print(f"Saved characteristics: {csv_path}")
     return 0
 
 

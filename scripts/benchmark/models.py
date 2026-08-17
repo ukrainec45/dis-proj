@@ -12,6 +12,7 @@ class PlannerResult:
     runtime_ms: float
     n_expanded: int | None = None
     n_generated: int | None = None
+    peak_memory_kib: float | None = None
     details: dict = field(default_factory=dict)
 
     @property

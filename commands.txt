@@ -1,0 +1,55 @@
+.\.venv\Scripts\python.exe -m scripts.pipeline.build_layers `
+  --rgb-image "C:\PhD\Знімки\608446069f2d7a0007e9b9d6.tif" `
+  --dem "path_planning\pre_fligth\Pulyny\dem.tif" `
+  --aoi "path_planning\pre_fligth\Pulyny\aoi.geojson" `
+  --visibility-zones "path_planning\pre_fligth\Pulyny\low_visibility.geojson" `
+  --zone-visibility 0.3 `
+  --mission-points "path_planning\pre_fligth\Pulyny\start_goal_.geojson" `
+  --output "maps\pulyny.npz" `
+  --pixel-size-m 1 `
+  --cell-size-m 100 `
+  --max-landing-sites 10 `
+  --battery-energy-wh 300 `
+  --energy-reserve-wh 40 `
+  --cruise-power-w 450
+
+  .\.venv\Scripts\python.exe -m scripts.pipeline.build_layers `
+  --rgb-image "C:\PhD\Знімки\60f93f26bdbb2f00062bcbed_Agro_05.tif" `
+  --dem "path_planning\pre_fligth\Agro\dem.tif" `
+  --aoi "path_planning\pre_fligth\Agro\aoi_.geojson" `
+  --nfz "path_planning\pre_fligth\Agro\no_fly_zone.geojson" `
+  --visibility-zones "path_planning\pre_fligth\Agro\low_visibility.geojson" `
+  --zone-visibility 0.3 `
+  --mission-points "path_planning\pre_fligth\Agro\start_goal_.geojson" `
+  --output "maps\agro.npz" `
+  --pixel-size-m 0.5 `
+  --cell-size-m 50 `
+  --smoke-cell-size-m 10 `
+  --max-landing-sites 10 `
+  --battery-energy-wh 300 `
+  --energy-reserve-wh 40 `
+  --cruise-power-w 450
+
+  .\.venv\Scripts\python.exe -c "from scripts.moa.run_planner import load_npz; from scripts.moa.visualize import map_plot; m=load_npz(r'maps\agro-100.npz'); map_plot(m,r'plots\agro',weights=(0.5,0.3,0.2))"
+
+  .\.venv\Scripts\python.exe -m scripts.moa.visualize_results `
+  --csv "plots\agro\route_characteristics.csv" `
+  --output "plots\agro\agro_route_analysis.png" `
+  --top-routes 20 `
+  --dpi 200
+
+  .\.venv\Scripts\python.exe -m scripts.pipeline.build_layers `
+  --rgb-image "C:\PhD\Знімки\60f6a9c042311e0006681a5a_Pyatka.tif" `
+  --dem "path_planning\pre_fligth\Pyatka\dem.tif" `
+  --aoi "path_planning\pre_fligth\Pyatka\aoi.geojson" `
+  --nfz "path_planning\pre_fligth\Pyatka\no_fly_zone.geojson" `
+  --visibility-zones "path_planning\pre_fligth\Pyatka\low_visibility.geojson" `
+  --zone-visibility 0.3 `
+  --mission-points "path_planning\pre_fligth\Pyatka\start_goal_.geojson" `
+  --output "maps\pyatka.npz" `
+  --pixel-size-m 0.5 `
+  --cell-size-m 50 `
+  --max-landing-sites 10 `
+  --battery-energy-wh 300 `
+  --energy-reserve-wh 40 `
+  --cruise-power-w 450

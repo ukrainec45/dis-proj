@@ -1,0 +1,9 @@
+{
+  "aois": [
+    {"id": "urban_roads", "land_cover": "urban/road-rich", "archive": "data/urban_roads.npz", "missions": [{"id": "m1", "start": [0, 0], "goal": [10, 10]}, {"id": "m2", "start": [1, 10], "goal": [10, 1]}]},
+    {"id": "agricultural", "land_cover": "agricultural/feature-poor", "archive": "data/agricultural.npz", "missions": [{"id": "m1", "start": [0, 0], "goal": [10, 10]}, {"id": "m2", "start": [1, 10], "goal": [10, 1]}]},
+    {"id": "water_adjacent", "land_cover": "water-adjacent", "archive": "data/water_adjacent.npz", "missions": [{"id": "m1", "start": [0, 0], "goal": [10, 10]}, {"id": "m2", "start": [1, 10], "goal": [10, 1]}]},
+    {"id": "rolling_terrain", "land_cover": "rolling terrain", "archive": "data/rolling_terrain.npz", "missions": [{"id": "m1", "start": [0, 0], "goal": [10, 10]}, {"id": "m2", "start": [1, 10], "goal": [10, 1]}]},
+    {"id": "ridge_valley", "land_cover": "ridge/valley", "archive": "data/ridge_valley.npz", "missions": [{"id": "m1", "start": [0, 0], "goal": [10, 10]}, {"id": "m2", "start": [1, 10], "goal": [10, 1]}]}
+  ]
+}
