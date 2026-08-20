@@ -12,8 +12,9 @@ import argparse
 
 import numpy as np
 
-from .cell_vectors import (build_cell_vectors, landing_site_coordinates,
-                           select_landing_sites, to_planner_layers)
+from .cell_vectors import (build_cell_vectors, build_edge_terrain_excess,
+                           landing_site_coordinates, select_landing_sites,
+                           to_planner_layers)
 from .nav_quality import (compute_localization_metric,
                           compute_rgb_localization_metric, terrain_grid_quality)
 from .raster import (create_grid, get_path, read_dem_aoi, read_dem_grid,
@@ -31,7 +32,8 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
                  visibility_zones_path=None, zone_visibility=None,
                  synthetic_smoke_sources=None, synthetic_smoke_min_visibility=None,
                  max_landing_sites=10, battery_energy_wh=300.0,
-                 energy_reserve_wh=40.0, cruise_power_w=450.0):
+                 energy_reserve_wh=40.0, cruise_power_w=450.0,
+                 cruise_altitude_agl_m=120.0, min_terrain_clearance_m=None):
     """Build and save the planner layers from the notebook's input products."""
     import geopandas as gpd
 
@@ -41,6 +43,8 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     _validate_visibility_options(zones, zone_visibility, synthetic_smoke_sources,
                                  synthetic_smoke_min_visibility)
     _validate_energy_options(battery_energy_wh, energy_reserve_wh, cruise_power_w)
+    min_terrain_clearance_m = _validate_terrain_clearance_options(
+        cruise_altitude_agl_m, min_terrain_clearance_m)
     if mission_points_path is None:
         raise ValueError("mission_points_path is required to export a runnable planner map")
     points = gpd.read_file(mission_points_path).to_crs("EPSG:32635")
@@ -103,6 +107,7 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
     cells = build_cell_vectors(extent, rows, cols, dem_grid, phi_vis, phi_ter,
                                visibility_planner, u_wind, v_wind, nfz)
     layers = to_planner_layers(cells, rows, cols)
+    layers["edge_terrain_excess_m"] = build_edge_terrain_excess(dem_grid)
     # Preserve the two sources separately for thesis ablations.  The planner
     # continues to consume only nav_density = max(visual_richness, rugosity).
     layers["visual_richness"] = phi_vis.astype(float)
@@ -127,7 +132,9 @@ def build_layers(r10m_dir, dem_path, aoi_path, output_path, nfz_path=None,
                         max_landing_sites=np.asarray(max_landing_sites, dtype=int),
                         battery_energy_wh=np.asarray(battery_energy_wh, dtype=float),
                         energy_reserve_wh=np.asarray(energy_reserve_wh, dtype=float),
-                        cruise_power_w=np.asarray(cruise_power_w, dtype=float))
+                        cruise_power_w=np.asarray(cruise_power_w, dtype=float),
+                        cruise_altitude_agl_m=np.asarray(cruise_altitude_agl_m, dtype=float),
+                        min_terrain_clearance_m=np.asarray(min_terrain_clearance_m, dtype=float))
     return layers
 
 
@@ -177,6 +184,20 @@ def _validate_energy_options(battery_energy_wh, energy_reserve_wh, cruise_power_
         raise ValueError("cruise_power_w must be positive")
 
 
+def _validate_terrain_clearance_options(cruise_altitude_agl_m,
+                                        min_terrain_clearance_m):
+    """Validate and resolve the edge-profile terrain-clearance requirement."""
+    if cruise_altitude_agl_m < 0:
+        raise ValueError("cruise_altitude_agl_m must be non-negative")
+    if min_terrain_clearance_m is None:
+        return float(cruise_altitude_agl_m)
+    if min_terrain_clearance_m < 0:
+        raise ValueError("min_terrain_clearance_m must be non-negative")
+    if min_terrain_clearance_m > cruise_altitude_agl_m:
+        raise ValueError("min_terrain_clearance_m cannot exceed cruise_altitude_agl_m")
+    return float(min_terrain_clearance_m)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Build MOA* raster layers from Sentinel-2, DEM, NFZ, wind, and smoke inputs")
     source_group = parser.add_mutually_exclusive_group(required=True)
@@ -206,6 +227,10 @@ def main(argv=None):
                         help="battery reserve excluded from mission use in Wh (default: 40)")
     parser.add_argument("--cruise-power-w", type=float, default=450.0,
                         help="constant cruise power used by the energy model (default: 450)")
+    parser.add_argument("--cruise-altitude-agl-m", type=float, default=120.0,
+                        help="planned AGL altitude at planner-cell centres (default: 120)")
+    parser.add_argument("--min-terrain-clearance-m", type=float,
+                        help="minimum detailed-DEM edge clearance (default: cruise AGL)")
     args = parser.parse_args(argv)
     layers = build_layers(args.r10m_dir, args.dem, args.aoi, args.output, args.nfz,
                           args.mission_points, args.cell_size_m, args.pixel_size_m,
@@ -215,9 +240,11 @@ def main(argv=None):
                           synthetic_smoke_sources=args.synthetic_smoke_sources,
                           synthetic_smoke_min_visibility=args.synthetic_smoke_min_visibility,
                           max_landing_sites=args.max_landing_sites,
-                          battery_energy_wh=args.battery_energy_wh,
-                          energy_reserve_wh=args.energy_reserve_wh,
-                          cruise_power_w=args.cruise_power_w)
+                           battery_energy_wh=args.battery_energy_wh,
+                           energy_reserve_wh=args.energy_reserve_wh,
+                           cruise_power_w=args.cruise_power_w,
+                           cruise_altitude_agl_m=args.cruise_altitude_agl_m,
+                           min_terrain_clearance_m=args.min_terrain_clearance_m)
     print(f"wrote {args.output}: {layers['dem'].shape[0]}x{layers['dem'].shape[1]} planner grid")
     return 0
 

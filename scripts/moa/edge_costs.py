@@ -33,11 +33,13 @@ class CostMap:
     ``start`` and ``goal`` are ``(x, y)`` cell indices.
     """
 
-    dem: np.ndarray          # [H, W] ground elevation (m)
+    dem: np.ndarray          # [H, W] DEM elevation at planner-cell centres (m)
     nav_density: np.ndarray  # [H, W] in [0, 1] = max(visual, rugosity)
     visibility: np.ndarray   # [H, W] in [0, 1] (1 = full visibility)
     wind_field: np.ndarray   # [H, W, 2] [u_east, u_north] at cruise altitude
     occupancy: np.ndarray    # [H, W] bool, True = hard blocked cell
+    dem_max: np.ndarray | None = None  # [H, W] maximum detailed DEM elevation per cell
+    edge_terrain_excess_m: np.ndarray | None = None  # [H, W, 3, 3], see minimum_edge_clearance_m
     resolution_m: float = 10.0
     start: tuple = (0, 0)
     goal: tuple = (0, 0)
@@ -47,6 +49,7 @@ class CostMap:
     v_air_max_mps: float | None = None
     z_max_m: float | None = None
     cruise_altitude_agl_m: float = 0.0
+    min_terrain_clearance_m: float | None = None
     battery_energy_wh: float | None = None
     energy_reserve_wh: float = 0.0
     cruise_power_w: float | None = None
@@ -63,6 +66,13 @@ class CostMap:
             raise ValueError("wind_field must have shape (H, W, 2)")
         if self.occupancy.shape != (H, W):
             raise ValueError("occupancy must have shape (H, W)")
+        if self.dem_max is None:
+            self.dem_max = self.dem.copy()
+        elif self.dem_max.shape != (H, W):
+            raise ValueError("dem_max must have shape (H, W)")
+        if (self.edge_terrain_excess_m is not None and
+                self.edge_terrain_excess_m.shape != (H, W, 3, 3)):
+            raise ValueError("edge_terrain_excess_m must have shape (H, W, 3, 3)")
         if self.landing_sites is not None and self.landing_sites.shape != (H, W):
             raise ValueError("landing_sites must have shape (H, W)")
         if self.resolution_m <= 0:
@@ -77,8 +87,13 @@ class CostMap:
             raise ValueError("v_max must be positive")
         if self.min_turn_radius_m is not None and self.min_turn_radius_m < 0:
             raise ValueError("min_turn_radius_m must be non-negative")
-        if self.z_max_m is not None and self.cruise_altitude_agl_m < 0:
+        if self.cruise_altitude_agl_m < 0:
             raise ValueError("cruise_altitude_agl_m must be non-negative")
+        if self.min_terrain_clearance_m is not None:
+            if self.min_terrain_clearance_m < 0:
+                raise ValueError("min_terrain_clearance_m must be non-negative")
+            if self.min_terrain_clearance_m > self.cruise_altitude_agl_m:
+                raise ValueError("min_terrain_clearance_m cannot exceed cruise_altitude_agl_m")
         if self.battery_energy_wh is not None:
             if self.battery_energy_wh <= 0 or self.energy_reserve_wh < 0:
                 raise ValueError("battery energy must be positive and reserve non-negative")
@@ -111,8 +126,30 @@ class CostMap:
         return 3600.0 * (self.battery_energy_wh - self.energy_reserve_wh) / self.cruise_power_w
 
     def altitude_m(self, cell):
-        """MSL flight altitude at a cell for a constant-altitude-above-ground plan."""
+        """MSL flight altitude at a planner-cell centre."""
         return float(self.dem[cell[1], cell[0]]) + self.cruise_altitude_agl_m
+
+    @property
+    def required_terrain_clearance_m(self):
+        """Required AGL clearance; the planned centre AGL is the default."""
+        return (self.cruise_altitude_agl_m if self.min_terrain_clearance_m is None
+                else self.min_terrain_clearance_m)
+
+    def minimum_edge_clearance_m(self, start, end):
+        """Minimum detailed-DEM clearance below the linear edge profile.
+
+        Legacy/synthetic maps without a detailed edge profile assume terrain
+        varies linearly between their planner-cell centre elevations.
+        """
+        if self.edge_terrain_excess_m is None:
+            return self.cruise_altitude_agl_m
+        dx, dy = end[0] - start[0], end[1] - start[1]
+        if abs(dx) > 1 or abs(dy) > 1 or (dx == 0 and dy == 0):
+            raise ValueError("terrain clearance is defined only for adjacent cells")
+        excess = float(self.edge_terrain_excess_m[start[1], start[0], dy + 1, dx + 1])
+        if not np.isfinite(excess):
+            return -np.inf
+        return self.cruise_altitude_agl_m - excess
 
 
 def sample_layer(layer, start, end, n=5):
@@ -171,6 +208,9 @@ def edge_objectives(start, end, cost_map, v_air, v_max):
         return None
     if cost_map.z_max_m is not None and cost_map.altitude_m(end) > cost_map.z_max_m:
         return None
+    if (cost_map.minimum_edge_clearance_m(start, end) + 1e-9 <
+            cost_map.required_terrain_clearance_m):
+        return None
 
     # A diagonal may not pass through the corner shared by two occupied cells.
     # This treats occupancy as closed raster no-fly area rather than point masks.
@@ -204,7 +244,7 @@ def edge_objectives(start, end, cost_map, v_air, v_max):
     b = -2.0 * u_par
     c = u_par * u_par + u_perp * u_perp - v_air * v_air
     discriminant = b * b - 4.0 * a * c
-    if discriminant <= 0.0:
+    if discriminant < 0.0:
         return None
     v_horizontal = (-b + np.sqrt(discriminant)) / (2.0 * a)
     if v_horizontal <= 0.0:

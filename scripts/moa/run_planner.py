@@ -8,7 +8,8 @@ Run as a module:
 Computes the exact Pareto front, prints the non-dominated cost vectors and
 selects one path with TOPSIS. The map NPZ must contain layers compatible with
 :class:`CostMap` (keys ``dem``, ``nav_density``, ``visibility``, ``wind_field``,
-``occupancy`` and optional ``resolution_m``, ``start``, ``goal``, ``v_air``,
+``occupancy`` and optional ``dem_max``, ``edge_terrain_excess_m``,
+``resolution_m``, ``start``, ``goal``, ``v_air``,
 ``v_max``).  Constraint fields such as ``z_max_m``, battery parameters, and
 ``landing_sites`` are also accepted when present.
 """
@@ -45,8 +46,12 @@ def load_npz(path, start=None, goal=None):
     data = np.load(path, allow_pickle=True)
     kwargs = {key: data[key] for key in
               ("dem", "nav_density", "visibility", "wind_field", "occupancy")}
+    for key in ("dem_max", "edge_terrain_excess_m"):
+        if key in data:
+            kwargs[key] = data[key]
     for key in ("resolution_m", "v_air", "v_max", "v_air_min_mps",
                 "v_air_max_mps", "z_max_m", "cruise_altitude_agl_m",
+                "min_terrain_clearance_m",
                 "battery_energy_wh", "energy_reserve_wh", "cruise_power_w",
                 "min_turn_radius_m"):
         if key in data:

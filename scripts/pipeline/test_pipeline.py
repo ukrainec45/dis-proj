@@ -3,7 +3,8 @@
 import numpy as np
 import pytest
 
-from .cell_vectors import (build_cell_vectors, derive_landing_sites,
+from .cell_vectors import (build_cell_vectors, build_edge_terrain_excess,
+                           derive_landing_sites,
                            landing_site_coordinates, select_landing_sites,
                            to_planner_layers)
 from .nav_quality import compute_rgb_localization_metric
@@ -13,6 +14,7 @@ from .visibility import (aggregate_to_planner_grid, combine_sources,
                          generate_local_smoke_sources, generate_smoke_sources,
                          visibility_from_zones)
 from .build_layers import (_read_visibility_zones, _validate_energy_options,
+                           _validate_terrain_clearance_options,
                            _validate_visibility_options)
 from .wind import get_wind_direction, get_wind_speed
 
@@ -109,6 +111,15 @@ def test_energy_options_require_a_positive_capacity_power_and_valid_reserve():
         _validate_energy_options(300.0, 40.0, 0.0)
 
 
+def test_terrain_clearance_defaults_to_cruise_agl_and_rejects_invalid_values():
+    assert _validate_terrain_clearance_options(120.0, None) == 120.0
+    assert _validate_terrain_clearance_options(120.0, 80.0) == 80.0
+    with pytest.raises(ValueError, match="non-negative"):
+        _validate_terrain_clearance_options(-1.0, None)
+    with pytest.raises(ValueError, match="cannot exceed"):
+        _validate_terrain_clearance_options(120.0, 121.0)
+
+
 def test_wind_helpers_and_layer_conversion():
     assert get_wind_speed(3, 4) == 5
     assert get_wind_direction(1, 0) == 90
@@ -119,6 +130,29 @@ def test_wind_helpers_and_layer_conversion():
     assert np.array_equal(layers["nav_density"], [[.5, .9]])
     assert layers["occupancy"].tolist() == [[False, True]]
     assert layers["wind_field"].shape == (1, 2, 2)
+
+
+def test_dem_layers_use_cell_centre_and_preserve_cell_maximum():
+    patch = np.array([[1.0, 2.0, 9.0],
+                      [3.0, 4.0, 5.0],
+                      [6.0, 7.0, 8.0]])[:, :, None]
+    cells = build_cell_vectors((0.0, 1.0, 0.0, 1.0), 1, 1, [[patch]],
+                               np.ones((1, 1)), np.ones((1, 1)),
+                               np.ones((1, 1)), np.zeros((1, 1)),
+                               np.zeros((1, 1)))
+    layers = to_planner_layers(cells, 1, 1)
+    assert layers["dem"][0, 0] == 4.0
+    assert layers["dem_max"][0, 0] == 9.0
+
+
+def test_detailed_dem_edge_profile_detects_a_between_vertex_peak():
+    left = np.zeros((3, 3, 1), dtype=float)
+    right = np.zeros((3, 3, 1), dtype=float)
+    left[1, 2, 0] = 5.0
+    excess = build_edge_terrain_excess([[left, right]])
+    assert excess.shape == (1, 2, 3, 3)
+    assert excess[0, 0, 1, 2] == pytest.approx(5.0)
+    assert excess[0, 1, 1, 0] == pytest.approx(5.0)
 
 
 def test_landing_sites_require_flat_visible_non_nfz_cells():

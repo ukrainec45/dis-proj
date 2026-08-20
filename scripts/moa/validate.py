@@ -481,6 +481,15 @@ class TestFlightConstraints:
         v_horizontal = np.sqrt((15.0**2 - 8.0**2) / 2.0)
         assert c[0] == pytest.approx(10.0 / v_horizontal, abs=1e-9)
 
+    def test_detailed_dem_profile_blocks_insufficient_edge_clearance(self):
+        cm = _tiny_map()
+        cm.cruise_altitude_agl_m = 20.0
+        cm.edge_terrain_excess_m = np.zeros((*cm.shape, 3, 3), dtype=float)
+        cm.edge_terrain_excess_m[0, 0, 1, 2] = 6.0
+        assert edge_objectives((0, 0), (1, 0), cm, cm.v_air, cm.v_max) is None
+        cm.min_terrain_clearance_m = 10.0
+        assert edge_objectives((0, 0), (1, 0), cm, cm.v_air, cm.v_max) is not None
+
     def test_energy_budget_rejects_route_beyond_usable_time(self):
         cm = _tiny_map()
         cm.battery_energy_wh = 0.9

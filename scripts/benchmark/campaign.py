@@ -31,7 +31,8 @@ SYNTHETIC_FAMILIES = {
 
 def _clone(cost_map, **changes):
     fields = {name: getattr(cost_map, name) for name in cost_map.__dataclass_fields__}
-    for name in ("dem", "nav_density", "visibility", "wind_field", "occupancy", "landing_sites"):
+    for name in ("dem", "dem_max", "edge_terrain_excess_m", "nav_density",
+                 "visibility", "wind_field", "occupancy", "landing_sites"):
         if fields[name] is not None:
             fields[name] = fields[name].copy()
     fields.update(changes)
@@ -165,6 +166,9 @@ def scale_case(case, factor):
     wind = np.repeat(np.repeat(cm.wind_field, factor, axis=0), factor, axis=1)
     changes = {
         "dem": np.repeat(np.repeat(cm.dem, factor, axis=0), factor, axis=1),
+        "dem_max": np.repeat(np.repeat(cm.dem_max, factor, axis=0), factor, axis=1),
+        # Artificial grid upscaling has no matching detailed DEM profile.
+        "edge_terrain_excess_m": None,
         "nav_density": np.repeat(np.repeat(cm.nav_density, factor, axis=0), factor, axis=1),
         "visibility": np.repeat(np.repeat(cm.visibility, factor, axis=0), factor, axis=1),
         "wind_field": wind,
