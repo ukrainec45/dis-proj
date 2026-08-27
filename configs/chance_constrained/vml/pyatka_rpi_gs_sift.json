@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scene": {
+    "artifact": "../../../results/chance_constrained/pyatka/scene_edges.npz",
+    "manifest": "../../../results/chance_constrained/pyatka/manifest.json"
+  },
+  "camera": {
+    "manufacturer": "Raspberry Pi",
+    "model": "Global Shutter Camera (Sony IMX296) + 6 mm CS lens",
+    "resolution_px": [1456, 1088],
+    "pixel_size_um": 3.45,
+    "focal_length_mm": 6.0,
+    "frame_rate_hz": 30.0,
+    "mounting": "nadir",
+    "distortion": {
+      "status": "not calibrated; zero in version-1 synthetic renderer"
+    }
+  },
+  "experiment": {
+    "sample_edges": 12,
+    "altitudes_agl_m": [60.0, 40.0, 100.0],
+    "yaw_offsets_deg": [0.0, 90.0, 180.0, 270.0],
+    "search_radii_m": [25.0, 75.0, 150.0],
+    "repetitions": 2,
+    "matching_gsd_m": 0.15,
+    "seed": 42,
+    "scenarios": [
+      {
+        "id": "nominal",
+        "contrast": 1.0,
+        "blur_sigma_px": 0.0,
+        "haze_fraction": 0.0,
+        "jpeg_quality": 100
+      },
+      {
+        "id": "degraded",
+        "contrast": 0.6,
+        "blur_sigma_px": 1.5,
+        "haze_fraction": 0.25,
+        "jpeg_quality": 70
+      }
+    ]
+  },
+  "matcher": {
+    "type": "opencv_sift_bf_homography",
+    "nfeatures": 4000,
+    "ratio_threshold": 0.75,
+    "ransac_threshold_px": 3.0,
+    "ransac_confidence": 0.995,
+    "minimum_good_matches": 12,
+    "minimum_inliers": 10,
+    "minimum_inlier_ratio": 0.3,
+    "maximum_median_reprojection_error_px": 3.0
+  },
+  "outcome": {
+    "maximum_position_error_m": 5.0,
+    "maximum_yaw_error_deg": 5.0
+  }
+}

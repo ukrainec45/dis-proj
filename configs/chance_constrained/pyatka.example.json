@@ -2,7 +2,7 @@
   "schema_version": 1,
   "sources": {
     "rgb_image": "C:/PhD/Знімки/60f6a9c042311e0006681a5a_Pyatka.tif",
-    "dem": "../../path_planning/pre_fligth/Pyatka/dem.tif",
+    "dem": "C:/PhD/Знімки/pre_flight_planning/Pyatka/dem.tif",
     "aoi": "../../path_planning/pre_fligth/Pyatka/aoi.geojson",
     "mission_points": "../../path_planning/pre_fligth/Pyatka/start_goal_.geojson",
     "nfz": "../../path_planning/pre_fligth/Pyatka/no_fly_zone.geojson",

@@ -1,0 +1,20 @@
+{
+  "trials": 96,
+  "smoke": false,
+  "outcomes": {
+    "correct": 63,
+    "reject": 33,
+    "false_accept": 0
+  },
+  "mean_runtime_ms": 461.5962062525796,
+  "camera_horizontal_fov_deg": 45.42837119089947,
+  "camera_vertical_fov_deg": 34.73936557118083,
+  "selected_edges": [
+    4277,
+    15834,
+    8955,
+    10081,
+    4479,
+    7582
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "artifact_format_version": 1,
+  "configuration_schema_version": 1,
+  "created_utc": "2026-08-27T12:14:50.592930+00:00",
+  "artifact": "scene_edges.npz",
+  "configuration_path": "C:\\PhD\\proj\\configs\\chance_constrained\\pyatka.example.json",
+  "configuration": {
+    "schema_version": 1,
+    "sources": {
+      "rgb_image": "C:/PhD/Знімки/60f6a9c042311e0006681a5a_Pyatka.tif",
+      "dem": "C:/PhD/Знімки/pre_flight_planning/Pyatka/dem.tif",
+      "aoi": "../../path_planning/pre_fligth/Pyatka/aoi.geojson",
+      "mission_points": "../../path_planning/pre_fligth/Pyatka/start_goal_.geojson",
+      "nfz": "../../path_planning/pre_fligth/Pyatka/no_fly_zone.geojson",
+      "visibility_zones": "../../path_planning/pre_fligth/Pyatka/low_visibility.geojson"
+    },
+    "grid": {
+      "target_crs": "EPSG:32635",
+      "pixel_size_m": 0.5,
+      "cell_size_m": 50.0,
+      "edge_profile_samples": 101
+    },
+    "delivery_zone": {
+      "radius_m": 50.0
+    },
+    "vehicle": {
+      "max_wind_mps": 12.0,
+      "minimum_terrain_clearance_m": 20.0
+    },
+    "operating_points": {
+      "altitudes_agl_m": [
+        20.0,
+        40.0,
+        60.0,
+        100.0
+      ],
+      "airspeeds_mps": [
+        10.0,
+        15.0
+      ]
+    },
+    "environment": {
+      "visibility_zone_value": 0.3
+    },
+    "scenarios": [
+      {
+        "id": "nominal",
+        "visibility_scale": 1.0,
+        "wind": {
+          "mode": "synthetic",
+          "base_speed_mps": 6.0,
+          "base_direction_deg": 240.0,
+          "perturbation_scale_mps": 2.5,
+          "smoothness": 1.5,
+          "seed": 42
+        }
+      },
+      {
+        "id": "degraded_visibility",
+        "visibility_scale": 0.6,
+        "wind": {
+          "mode": "synthetic",
+          "base_speed_mps": 6.0,
+          "base_direction_deg": 240.0,
+          "perturbation_scale_mps": 2.5,
+          "smoothness": 1.5,
+          "seed": 43
+        }
+      }
+    ],
+    "sensors": {
+      "status": "model assumptions; not calibrated",
+      "camera": {},
+      "imu": {},
+      "radar_altimeter": {}
+    },
+    "navigation_models": {
+      "architecture": "ins_openvins_with_absolute_vml_and_tan",
+      "openvins": {
+        "status": "not configured"
+      },
+      "visual_map_localization": {
+        "status": "matcher and acceptance policy not selected"
+      },
+      "terrain_aided_navigation": {
+        "status": "point-mass model not configured"
+      },
+      "arrival_rule": {
+        "status": "not configured"
+      }
+    },
+    "monte_carlo": {
+      "seed": 42
+    }
+  },
+  "resolved_sources": {
+    "rgb_image": "C:\\PhD\\Знімки\\60f6a9c042311e0006681a5a_Pyatka.tif",
+    "dem": "C:\\PhD\\Знімки\\pre_flight_planning\\Pyatka\\dem.tif",
+    "aoi": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\aoi.geojson",
+    "mission_points": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\start_goal_.geojson",
+    "nfz": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\no_fly_zone.geojson",
+    "visibility_zones": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\low_visibility.geojson"
+  },
+  "source_fingerprints": {
+    "rgb_image": {
+      "path": "C:\\PhD\\Знімки\\60f6a9c042311e0006681a5a_Pyatka.tif",
+      "size_bytes": 186133450,
+      "mtime_ns": 1786360565315020300,
+      "sha256": "d129973b379ca6b16cf59367fe321eddf55319c423dd0267267748a52143d0fa"
+    },
+    "dem": {
+      "path": "C:\\PhD\\Знімки\\pre_flight_planning\\Pyatka\\dem.tif",
+      "size_bytes": 29579,
+      "mtime_ns": 1787817864766126300,
+      "sha256": "ce116bef8bb7d1b7cf32a548c5dd4edb305dcacb3993cb9e7495b1fab0b26563"
+    },
+    "aoi": {
+      "path": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\aoi.geojson",
+      "size_bytes": 495,
+      "mtime_ns": 1786958711392132300,
+      "sha256": "5884e6e2a1b850de6bef745df85a1c98978dbe2285a1d7ebaeb9183ddb747188"
+    },
+    "mission_points": {
+      "path": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\start_goal_.geojson",
+      "size_bytes": 465,
+      "mtime_ns": 1786958711397133300,
+      "sha256": "6a61463f22eb67c1827f319eeef9822dfed63c206206c4a4a8c1599ada75aa6b"
+    },
+    "nfz": {
+      "path": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\no_fly_zone.geojson",
+      "size_bytes": 506,
+      "mtime_ns": 1786958711395135500,
+      "sha256": "90ab0f39293687d3c0269cd80859b2609b5dfb529673983087ef80c4372b5355"
+    },
+    "visibility_zones": {
+      "path": "C:\\PhD\\proj\\path_planning\\pre_fligth\\Pyatka\\low_visibility.geojson",
+      "size_bytes": 1199,
+      "mtime_ns": 1786958711393132400,
+      "sha256": "51676344dae165686910d7d4cce3c57ca1760c861c430bc33a9f28174676c1d3"
+    }
+  },
+  "runtime": {
+    "python": "3.13.3",
+    "numpy": "2.5.1"
+  }
+}
