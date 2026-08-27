@@ -2,6 +2,9 @@
 
 import numpy as np
 
+from .utils.terrain import (compute_roughness, compute_slope, compute_std,
+                            compute_tpi, compute_tri)
+
 
 def robust_normalize(array, p_low=2, p_high=98):
     p_min, p_max = np.percentile(array, (p_low, p_high))
@@ -75,32 +78,6 @@ def compute_rgb_localization_metric(rgb_grid, window=7, alpha=0.9, beta=0.6):
 
     geom_norm, tex_norm = robust_normalize(geom_scores), robust_normalize(tex_scores)
     return 1.0 - (1.0 - alpha * geom_norm) * (1.0 - beta * tex_norm), geom_norm, tex_norm
-
-
-def compute_slope(dem, px_res=10):
-    dy, dx = np.gradient(dem, px_res)
-    return np.sqrt(dx**2 + dy**2)
-
-
-def compute_tri(dem, window_size=7):
-    from scipy.ndimage import generic_filter
-    return generic_filter(dem, lambda values: np.sqrt(np.mean((values - values[len(values) // 2])**2)), size=window_size)
-
-
-def compute_tpi(dem, window_size=7):
-    from scipy.ndimage import uniform_filter
-    return dem - uniform_filter(dem, size=window_size)
-
-
-def compute_std(dem, window_size=7):
-    from scipy.ndimage import uniform_filter
-    first, second = uniform_filter(dem, window_size), uniform_filter(dem * dem, window_size)
-    return np.sqrt(np.maximum(second - first * first, 0))
-
-
-def compute_roughness(dem, window_size=7):
-    from scipy.ndimage import generic_filter
-    return generic_filter(dem, lambda values: np.max(values) - np.min(values), size=window_size)
 
 
 def terrain_quality(dem, px_res=10, window_size=7,

@@ -15,6 +15,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from scripts.pipeline.utils.flight import edge_travel_time_s
+
 # 8-connected grid neighbourhood (dx, dy).
 NEIGHBOR_OFFSETS = [
     (dx, dy)
@@ -228,28 +230,9 @@ def edge_objectives(start, end, cost_map, v_air, v_max):
     # Convert the row displacement to the geographic northing convention.
     dy = -(end[1] - start[1]) * cost_map.resolution_m
     dz = float(cost_map.dem[end[1], end[0]]) - float(cost_map.dem[start[1], start[0]])
-    horizontal_distance = np.hypot(dx, dy)
-    distance = np.sqrt(horizontal_distance * horizontal_distance + dz * dz)
-    if horizontal_distance <= 0.0:
-        return (0.0, 0.0, 0.0)
-
-    # Wind is horizontal.  Resolve it against a *unit horizontal* track vector,
-    # then solve the 3-D airspeed constraint for horizontal ground speed V_h:
-    # (V_h-u_along)^2 + u_cross^2 + (dz/d_h * V_h)^2 = v_air^2.
-    track = np.array([dx, dy]) / horizontal_distance
-    u_par = float(np.dot(wind, track))
-    u_perp = float(wind[0] * track[1] - wind[1] * track[0])
-    slope = dz / horizontal_distance
-    a = 1.0 + slope * slope
-    b = -2.0 * u_par
-    c = u_par * u_par + u_perp * u_perp - v_air * v_air
-    discriminant = b * b - 4.0 * a * c
-    if discriminant < 0.0:
+    t = edge_travel_time_s(dx, dy, dz, wind, v_air)
+    if t is None:
         return None
-    v_horizontal = (-b + np.sqrt(discriminant)) / (2.0 * a)
-    if v_horizontal <= 0.0:
-        return None
-    t = horizontal_distance / v_horizontal
 
     nav = sample_layer(cost_map.nav_density, start, end)
     vsb = sample_layer(cost_map.visibility, start, end)

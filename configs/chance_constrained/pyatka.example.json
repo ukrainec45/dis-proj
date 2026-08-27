@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "sources": {
+    "rgb_image": "C:/PhD/Знімки/60f6a9c042311e0006681a5a_Pyatka.tif",
+    "dem": "../../path_planning/pre_fligth/Pyatka/dem.tif",
+    "aoi": "../../path_planning/pre_fligth/Pyatka/aoi.geojson",
+    "mission_points": "../../path_planning/pre_fligth/Pyatka/start_goal_.geojson",
+    "nfz": "../../path_planning/pre_fligth/Pyatka/no_fly_zone.geojson",
+    "visibility_zones": "../../path_planning/pre_fligth/Pyatka/low_visibility.geojson"
+  },
+  "grid": {
+    "target_crs": "EPSG:32635",
+    "pixel_size_m": 0.5,
+    "cell_size_m": 50.0,
+    "edge_profile_samples": 101
+  },
+  "delivery_zone": {
+    "radius_m": 50.0
+  },
+  "vehicle": {
+    "max_wind_mps": 12.0,
+    "minimum_terrain_clearance_m": 20.0
+  },
+  "operating_points": {
+    "altitudes_agl_m": [20.0, 40.0, 60.0, 100.0],
+    "airspeeds_mps": [10.0, 15.0]
+  },
+  "environment": {
+    "visibility_zone_value": 0.3
+  },
+  "scenarios": [
+    {
+      "id": "nominal",
+      "visibility_scale": 1.0,
+      "wind": {
+        "mode": "synthetic",
+        "base_speed_mps": 6.0,
+        "base_direction_deg": 240.0,
+        "perturbation_scale_mps": 2.5,
+        "smoothness": 1.5,
+        "seed": 42
+      }
+    },
+    {
+      "id": "degraded_visibility",
+      "visibility_scale": 0.6,
+      "wind": {
+        "mode": "synthetic",
+        "base_speed_mps": 6.0,
+        "base_direction_deg": 240.0,
+        "perturbation_scale_mps": 2.5,
+        "smoothness": 1.5,
+        "seed": 43
+      }
+    }
+  ],
+  "sensors": {
+    "status": "model assumptions; not calibrated",
+    "camera": {},
+    "imu": {},
+    "radar_altimeter": {}
+  },
+  "navigation_models": {
+    "architecture": "ins_openvins_with_absolute_vml_and_tan",
+    "openvins": {
+      "status": "not configured"
+    },
+    "visual_map_localization": {
+      "status": "matcher and acceptance policy not selected"
+    },
+    "terrain_aided_navigation": {
+      "status": "point-mass model not configured"
+    },
+    "arrival_rule": {
+      "status": "not configured"
+    }
+  },
+  "monte_carlo": {
+    "seed": 42
+  }
+}

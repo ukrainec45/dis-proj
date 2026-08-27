@@ -18,6 +18,9 @@ The work investigates a hybrid navigation approach that combines onboard motion 
 - `notebooks/` — exploratory analysis and data-processing notebook.
 - `path_planning/` — areas of interest, start/goal points, and restricted-area test data.
 - `scripts/pipeline/` — preparation of planning layers and navigation-quality metrics.
+- `scripts/pipeline/chance_constrained/` — versioned scene and directed-edge
+  inputs for the chance-constrained planner (first increment; no OpenVINS,
+  absolute visual-map-localization, TAN, or route-success outcome models yet).
 - `scripts/moa/` — multi-objective path-planning experiments and validation utilities.
 - `plots/` — generated planning visualizations.
 
