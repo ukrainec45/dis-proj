@@ -1,10 +1,10 @@
 # Chance-constrained input pipeline
 
-This package implements the first preprocessing increment for the
-chance-constrained planner. It creates a versioned scene and directed-edge
-artifact; it deliberately does **not** estimate OpenVINS propagation,
-absolute visual map localization (VML), TAN, or route-success outcome models
-yet.
+This package contains two separate preprocessing increments for the
+chance-constrained planner: the versioned scene/directed-edge artifact and the
+empirical INS/OpenVINS propagation-model pipeline. Absolute visual map
+localization (VML), TAN, the combined edge operator, and route-success outcome
+models remain separate and are not fabricated here.
 
 Run it with:
 
@@ -30,6 +30,14 @@ orthophoto/DEM source window required by later sensor models. Future artifacts
 must keep INS/OpenVINS propagation, VML outcomes, and TAN outcomes separate and
 combine them through a conditional edge transition that depends on the incoming
 navigation belief state.
+
+The INS/OpenVINS increment lives in `propagation/`. It consumes synchronized
+OpenVINS/EuRoC replay logs, creates relative 2/5/10-second error segments, fits
+conditional process-noise and mode-transition models, and writes
+`ins_openvins_model.npz`, `segments.csv`, `summary.json`, and `manifest.json`.
+No measured EuRoC artifact is committed to the repository; creating its numeric
+contents requires the Ubuntu replay procedure documented in
+`propagation/ubuntu/README.md`.
 
 If the circle is smaller than the grid geometry and intersects no edge, input
 preparation fails explicitly. The operator must then increase the justified

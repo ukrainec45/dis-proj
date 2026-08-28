@@ -1,8 +1,8 @@
 """Input preparation for navigation-aware chance-constrained planning.
 
-This first increment intentionally prepares only scene and directed-edge data.
-It does not fabricate OpenVINS propagation, absolute visual map localization,
-TAN, or route-success outcome models.
+Scene preparation and INS/OpenVINS model construction remain separate artifact
+pipelines. Neither one fabricates VML, TAN, combined-edge, or route-success
+outcome parameters.
 """
 
 from .artifacts import load_scene_edges

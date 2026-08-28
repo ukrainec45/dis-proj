@@ -1,0 +1,35 @@
+diff --git a/ov_msckf/src/core/VioManager.cpp b/ov_msckf/src/core/VioManager.cpp
+index c8abcca..46465dc 100644
+--- a/ov_msckf/src/core/VioManager.cpp
++++ b/ov_msckf/src/core/VioManager.cpp
+@@ -118,7 +118,7 @@ VioManager::VioManager(VioManagerOptions &params_) : params(params_) {
+     if (state->_options.max_slam_features > 0) {
+       of_statistics << "slam update,slam delayed,";
+     }
+-    of_statistics << "re-tri & marg,total" << std::endl;
++    of_statistics << "re-tri & marg,total,accepted_visual_features,tracked_features,visual_update_accepted" << std::endl;
+   }
+ 
+   //===================================================================================
+@@ -608,6 +608,11 @@ void VioManager::feed_measurement_camera(const ov_core::CameraData &message) {
+   double time_slam_delay = (rT6 - rT5).total_microseconds() * 1e-6;
+   double time_marg = (rT7 - rT6).total_microseconds() * 1e-6;
+   double time_total = (rT7 - rT1).total_microseconds() * 1e-6;
++  size_t tracked_features = 0;
++  for (const auto &camera_ids : trackFEATS->get_last_ids()) {
++    tracked_features += camera_ids.second.size();
++  }
++  size_t accepted_visual_features = featsup_MSCKF.size() + feats_slam_UPDATE.size() + feats_slam_DELAYED.size();
+ 
+   // Timing information
+   PRINT_DEBUG(BLUE "[TIME]: %.4f seconds for tracking\n" RESET, time_track);
+@@ -639,7 +644,8 @@ void VioManager::feed_measurement_camera(const ov_core::CameraData &message) {
+     if (state->_options.max_slam_features > 0) {
+       of_statistics << time_slam_update << "," << time_slam_delay << ",";
+     }
+-    of_statistics << time_marg << "," << time_total << std::endl;
++    of_statistics << time_marg << "," << time_total << "," << accepted_visual_features << "," << tracked_features << ","
++                  << (accepted_visual_features > 0 ? 1 : 0) << std::endl;
+     of_statistics.flush();
+   }
+ 

@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "model": {
+    "id": "openvins-v2.7-euroc-v2-monocular-baseline-v1",
+    "durations_s": [2, 5, 10],
+    "quantile_levels": [0.5, 0.9, 0.95, 0.99],
+    "minimum_fit_samples": 3
+  },
+  "mode_policy": {
+    "accepted_update_timeout_s": 0.25,
+    "degraded_update_timeout_s": 0.6,
+    "recovery_duration_s": 2.0,
+    "maximum_recovery_gap_s": 0.6
+  },
+  "validation": {
+    "confidence": 0.95,
+    "minimum_coverage": 0.9,
+    "minimum_group_samples": 3,
+    "minimum_evaluable_groups": 3
+  },
+  "provenance": {
+    "baseline_only": true,
+    "target_platform_calibrated": false,
+    "openvins_version": "v2.7",
+    "openvins_commit": "93adc241390d13e99232652cf05cbe18a93c7bea",
+    "camera_selection": "cam0_only",
+    "source_manifest": "${EUROC_PROPAGATION_ROOT}/source_manifest.json"
+  },
+  "runs": [
+    {
+      "id": "V2_01_easy_nominal_20hz",
+      "dataset_id": "V2_01_easy",
+      "visual_regime": "nominal_20hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_01_easy_nominal_20hz.npz"
+    },
+    {
+      "id": "V2_01_easy_degraded_10hz",
+      "dataset_id": "V2_01_easy",
+      "visual_regime": "degraded_10hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_01_easy_degraded_10hz.npz"
+    },
+    {
+      "id": "V2_01_easy_degraded_5hz",
+      "dataset_id": "V2_01_easy",
+      "visual_regime": "degraded_5hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_01_easy_degraded_5hz.npz"
+    },
+    {
+      "id": "V2_01_easy_blackout",
+      "dataset_id": "V2_01_easy",
+      "visual_regime": "nominal_20hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_01_easy_blackout.npz"
+    },
+    {
+      "id": "V2_02_medium_nominal_20hz",
+      "dataset_id": "V2_02_medium",
+      "visual_regime": "nominal_20hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_02_medium_nominal_20hz.npz"
+    },
+    {
+      "id": "V2_02_medium_degraded_10hz",
+      "dataset_id": "V2_02_medium",
+      "visual_regime": "degraded_10hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_02_medium_degraded_10hz.npz"
+    },
+    {
+      "id": "V2_02_medium_degraded_5hz",
+      "dataset_id": "V2_02_medium",
+      "visual_regime": "degraded_5hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_02_medium_degraded_5hz.npz"
+    },
+    {
+      "id": "V2_02_medium_blackout",
+      "dataset_id": "V2_02_medium",
+      "visual_regime": "nominal_20hz",
+      "split": "fit",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_02_medium_blackout.npz"
+    },
+    {
+      "id": "V2_03_difficult_nominal_20hz",
+      "dataset_id": "V2_03_difficult",
+      "visual_regime": "nominal_20hz",
+      "split": "validation",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_03_difficult_nominal_20hz.npz"
+    },
+    {
+      "id": "V2_03_difficult_degraded_10hz",
+      "dataset_id": "V2_03_difficult",
+      "visual_regime": "degraded_10hz",
+      "split": "validation",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_03_difficult_degraded_10hz.npz"
+    },
+    {
+      "id": "V2_03_difficult_degraded_5hz",
+      "dataset_id": "V2_03_difficult",
+      "visual_regime": "degraded_5hz",
+      "split": "validation",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_03_difficult_degraded_5hz.npz"
+    },
+    {
+      "id": "V2_03_difficult_blackout",
+      "dataset_id": "V2_03_difficult",
+      "visual_regime": "nominal_20hz",
+      "split": "validation",
+      "run_log": "${EUROC_PROPAGATION_ROOT}/run_logs/V2_03_difficult_blackout.npz"
+    }
+  ]
+}
