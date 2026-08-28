@@ -85,6 +85,43 @@ The converter synchronizes ground truth with odometry, rotates the local
 OpenVINS velocity and its covariance into the global coordinate frame, and
 stores the reported covariance. Repeat this command for all 12 run IDs.
 
+## MUN-FRL Bell412 outdoor replay
+
+`run_munfrl_replay.sh` is the outdoor monocular adapter. It decodes the
+benchmark bag's compressed BGR JPEG stream to `mono8`, forwards `/imu/data`,
+and does not play or consume LiDAR. The generated OpenVINS configuration uses
+the official Bell412 down-camera Kannala-Brandt calibration, Bell412
+camera-to-IMU transform, dataset-1 camera time shift, and documented Xsens
+noise parameters. FRL remains an offline 6DoF reference and is not an
+estimator input.
+
+The bag must use rosbag2 `zstd-message` compression if it is stored on a
+read-only volume. Jazzy expands `zstd-file` bags beside the source database,
+which fails on a read-only NTFS mount and temporarily needs several additional
+gigabytes. Section 9 of `notebooks/vins_dataset_generation.ipynb` repacks an
+already filtered Drive artifact without downloading the 6 GB source again.
+
+For the first nominal run:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+source /absolute/path/to/proj/.openvins_ws/install/setup.bash
+
+runner=/absolute/path/to/proj/scripts/pipeline/chance_constrained/propagation/ubuntu/run_munfrl_replay.sh
+repo=/absolute/path/to/proj
+ov="$repo/.openvins_ws/src/open_vins"
+bag=/absolute/path/to/bell412_dataset1_sample_openvins_message
+root=/absolute/writable/path/to/munfrl_propagation
+
+BAG_PLAY_RATE=0.5 bash "$runner" "$repo" "$ov" "$bag" "$root" \
+  bell412_dataset1_nominal_15hz 1 nominal_15hz \
+  '{"starts":[],"durations":[]}'
+```
+
+`BAG_PLAY_DURATION_S=45` may be set for a smoke test. Experimental replays
+must omit it. A failed/partial run directory must be moved aside before a
+retry because the runner intentionally refuses to overwrite results.
+
 Create `source_manifest.json` by supplying the three datasets and all 12
 `raw/<run>/config/config_manifest.json` files through the repeatable
 `--openvins-config-manifest` argument:

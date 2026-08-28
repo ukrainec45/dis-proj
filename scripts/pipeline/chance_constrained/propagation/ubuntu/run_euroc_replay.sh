@@ -51,8 +51,8 @@ python3 "$repo/scripts/pipeline/chance_constrained/propagation/ubuntu/frame_filt
   -r output:=/openvins/cam0_filtered \
   -p stride:="$stride" \
   -p base_regime:="$base_regime" \
-  -p blackout_starts_s:="$starts" \
-  -p blackout_durations_s:="$durations" \
+  -p "blackout_starts_s:='$starts'" \
+  -p "blackout_durations_s:='$durations'" \
   -p schedule_csv:="$run_output/frame_schedule.csv" \
   >"$run_output/frame_filter.log" 2>&1 &
 filter_pid=$!
@@ -66,7 +66,7 @@ recorder_pid=$!
 
 ros2 launch ov_msckf subscribe.launch.py \
   config_path:="$config_output/estimator_config.yaml" \
-  use_stereo:=false max_cameras:=1 save_total_state:=true rviz_enable:=false \
+  use_stereo:=false max_cameras:=1 save_total_state:=false rviz_enable:=false \
   >"$run_output/openvins.log" 2>&1 &
 openvins_pid=$!
 

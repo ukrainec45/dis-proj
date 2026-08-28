@@ -65,7 +65,7 @@ def main():
         "calib_cam_timeoffset": "false",
         "record_timing_information": "true",
         "record_timing_filepath": f'"{run_output / "diagnostics.csv"}"',
-        "save_total_state": "true",
+        "save_total_state": "false",
         "filepath_est": f'"{run_output / "openvins_state.txt"}"',
         "filepath_std": f'"{run_output / "openvins_state_std.txt"}"',
         "filepath_gt": f'"{run_output / "openvins_groundtruth.txt"}"',

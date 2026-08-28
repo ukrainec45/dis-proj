@@ -44,9 +44,10 @@ The outdoor MUN-FRL preparation workflow is in
 the nadir monochrome camera, IMU, synchronization, and offline ground-truth
 streams, and writes a compact ROS 2 Jazzy bag. LiDAR is excluded. The resulting
 data supports normal VIO and post-initialization camera-blackout propagation;
-it does not define a separate standalone INS model. The downstream replay
-runner and log adapter are still EuRoC-specific and must be adapted to the
-selected MUN-FRL topics and ground-truth representation before model fitting.
+it does not define a separate standalone INS model. A Bell412 replay runner,
+compressed-image decoder, and pinned OpenVINS configuration now live in
+`propagation/ubuntu/`. The run-log adapter still needs FRL-reference support
+before MUN-FRL results can be used for model fitting.
 
 If the circle is smaller than the grid geometry and intersects no edge, input
 preparation fails explicitly. The operator must then increase the justified
