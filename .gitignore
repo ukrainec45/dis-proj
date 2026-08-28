@@ -1,6 +1,8 @@
 ~$.*
 *.pyc
 .venv/
+.openvins_ws/
+/log/
 __pycache__/
 *.tif
 *.pdf

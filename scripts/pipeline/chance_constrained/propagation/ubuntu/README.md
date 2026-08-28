@@ -1,4 +1,4 @@
-# EuRoC/OpenVINS baseline on Ubuntu 22.04
+# EuRoC/OpenVINS baseline on Ubuntu 24.04 / ROS 2 Jazzy
 
 This directory contains the Ubuntu portion of the
 `ins_openvins_model.npz` build pipeline. The platform-independent Python code
@@ -8,8 +8,10 @@ below.
 
 ## 1. One-time setup
 
-Install ROS2 Humble and the OpenVINS dependencies, then build the pinned
-OpenVINS `v2.7` release:
+Install ROS 2 Jazzy and the OpenVINS dependencies, then build the pinned
+OpenVINS `v2.7` release. The Jazzy patch contains the upstream Ceres 2.2
+adaptation from OpenVINS PR #520 and the required ROS 2 header and shutdown
+compatibility changes from PR #500; it does not change estimator behavior:
 
 ```bash
 mkdir -p ~/openvins_ws/src
@@ -18,9 +20,10 @@ git clone --branch v2.7 --depth 1 https://github.com/rpng/open_vins.git
 cd open_vins
 git rev-parse HEAD
 git apply /absolute/path/to/proj/scripts/pipeline/chance_constrained/propagation/ubuntu/openvins_v2.7_diagnostics.patch
+git apply /absolute/path/to/proj/scripts/pipeline/chance_constrained/propagation/ubuntu/openvins_v2.7_jazzy.patch
 cd ~/openvins_ws
+source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
-source /opt/ros/humble/setup.bash
 source ~/openvins_ws/install/setup.bash
 ```
 

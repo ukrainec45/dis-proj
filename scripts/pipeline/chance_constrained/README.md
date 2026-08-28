@@ -39,6 +39,15 @@ No measured EuRoC artifact is committed to the repository; creating its numeric
 contents requires the Ubuntu replay procedure documented in
 `propagation/ubuntu/README.md`.
 
+The outdoor MUN-FRL preparation workflow is in
+`notebooks/vins_dataset_generation.ipynb`. It runs in Google Colab, keeps only
+the nadir monochrome camera, IMU, synchronization, and offline ground-truth
+streams, and writes a compact ROS 2 Jazzy bag. LiDAR is excluded. The resulting
+data supports normal VIO and post-initialization camera-blackout propagation;
+it does not define a separate standalone INS model. The downstream replay
+runner and log adapter are still EuRoC-specific and must be adapted to the
+selected MUN-FRL topics and ground-truth representation before model fitting.
+
 If the circle is smaller than the grid geometry and intersects no edge, input
 preparation fails explicitly. The operator must then increase the justified
 delivery radius or reduce planner-cell size rather than silently planning to a

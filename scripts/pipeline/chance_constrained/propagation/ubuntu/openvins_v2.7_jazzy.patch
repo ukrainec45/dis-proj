@@ -1,0 +1,298 @@
+diff --git a/ov_init/src/ceres/State_JPLQuatLocal.cpp b/ov_init/src/ceres/State_JPLQuatLocal.cpp
+index 8314e84..eb9b2d3 100644
+--- a/ov_init/src/ceres/State_JPLQuatLocal.cpp
++++ b/ov_init/src/ceres/State_JPLQuatLocal.cpp
+@@ -48,9 +48,51 @@ bool State_JPLQuatLocal::Plus(const double *x, const double *delta, double *x_pl
+   return true;
+ }
+ 
++#if CERES_VERSION_MAJOR == 2 && CERES_VERSION_MINOR >= 2
++bool State_JPLQuatLocal::PlusJacobian(const double *x, double *jacobian) const {
++  Eigen::Map<Eigen::Matrix<double, 4, 3, Eigen::RowMajor>> j(jacobian);
++  j.topRows<3>().setIdentity();
++  j.bottomRows<1>().setZero();
++  return true;
++}
++
++bool State_JPLQuatLocal::Minus(const double *y, const double *x, double *delta) const {
++  Eigen::Map<const Eigen::Vector4d> q1(x);
++  Eigen::Map<const Eigen::Vector4d> q2(y);
++  Eigen::Vector4d q_rel = ov_core::quat_multiply(q2, ov_core::Inv(q1));
++  Eigen::Vector3d omega;
++
++  double qw = q_rel(3);
++  Eigen::Vector3d qv = q_rel.head<3>();
++
++  double norm_qv = qv.norm();
++  if (norm_qv < 1e-8) {
++    omega.setZero();
++  } else {
++    double angle = 2.0 * std::atan2(norm_qv, qw);
++    omega = angle * (qv / norm_qv);
++  }
++
++  Eigen::Map<Eigen::Vector3d> d_out(delta);
++  d_out = omega;
++  return true;
++}
++
++bool State_JPLQuatLocal::MinusJacobian(const double *x, double *jacobian) const {
++  // This is an approximation: ∂delta/∂x ≈ [I; 0]
++  Eigen::Map<Eigen::Matrix<double, 3, 4, Eigen::RowMajor>> j(jacobian);
++  j.setZero();
++  j.leftCols<3>().setIdentity();
++  return true;
++}
++
++#else
++
+ bool State_JPLQuatLocal::ComputeJacobian(const double *x, double *jacobian) const {
+   Eigen::Map<Eigen::Matrix<double, 4, 3, Eigen::RowMajor>> j(jacobian);
+   j.topRows<3>().setIdentity();
+   j.bottomRows<1>().setZero();
+   return true;
+ }
++
++#endif
+diff --git a/ov_init/src/ceres/State_JPLQuatLocal.h b/ov_init/src/ceres/State_JPLQuatLocal.h
+index e6b3d01..043b484 100644
+--- a/ov_init/src/ceres/State_JPLQuatLocal.h
++++ b/ov_init/src/ceres/State_JPLQuatLocal.h
+@@ -24,12 +24,20 @@
+ 
+ #include <ceres/ceres.h>
+ 
++#if CERES_VERSION_MAJOR == 2 && CERES_VERSION_MINOR >= 2
++#include <ceres/manifold.h>
++#endif
++
+ namespace ov_init {
+ 
+ /**
+  * @brief JPL quaternion CERES state parameterization
+  */
++#if CERES_VERSION_MAJOR == 2 && CERES_VERSION_MINOR >= 2
++class State_JPLQuatLocal : public ceres::Manifold {
++#else
+ class State_JPLQuatLocal : public ceres::LocalParameterization {
++#endif
+ public:
+   /**
+    * @brief State update function for a JPL quaternion representation.
+@@ -43,6 +51,21 @@ public:
+    */
+   bool Plus(const double *x, const double *delta, double *x_plus_delta) const override;
+ 
++#if CERES_VERSION_MAJOR == 2 && CERES_VERSION_MINOR >= 2
++
++  bool PlusJacobian(const double *x, double *jacobian) const override;
++
++  // Inverse update: delta = Log(q2 ⊗ inv(q1))
++  bool Minus(const double *y, const double *x, double *delta) const override;
++
++  // Jacobian of Minus
++  bool MinusJacobian(const double *x, double *jacobian) const override;
++
++  int AmbientSize() const override { return 4; }
++  int TangentSize() const override { return 3; }
++
++#else
++
+   /**
+    * @brief Computes the jacobian in respect to the local parameterization
+    *
+@@ -59,8 +82,10 @@ public:
+   int GlobalSize() const override { return 4; };
+ 
+   int LocalSize() const override { return 3; };
++
++#endif
+ };
+ 
+ } // namespace ov_init
+ 
+-#endif // OV_INIT_CERES_JPLQUATLOCAL_H
+\ No newline at end of file
++#endif // OV_INIT_CERES_JPLQUATLOCAL_H
+diff --git a/ov_msckf/src/ros/ROS2Visualizer.h b/ov_msckf/src/ros/ROS2Visualizer.h
+index a737f80..7bbbb5a 100644
+--- a/ov_msckf/src/ros/ROS2Visualizer.h
++++ b/ov_msckf/src/ros/ROS2Visualizer.h
+@@ -25,7 +25,11 @@
+ #include <geometry_msgs/msg/pose_stamped.hpp>
+ #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+ #include <geometry_msgs/msg/transform_stamped.hpp>
++#if __has_include(<image_transport/image_transport.hpp>)
++#include <image_transport/image_transport.hpp>
++#else
+ #include <image_transport/image_transport.h>
++#endif
+ #include <message_filters/subscriber.h>
+ #include <message_filters/sync_policies/approximate_time.h>
+ #include <message_filters/time_synchronizer.h>
+@@ -42,7 +46,11 @@
+ #include <std_msgs/msg/float64.hpp>
+ #include <tf2/LinearMath/Quaternion.h>
+ #include <tf2/transform_datatypes.h>
++#if __has_include(<tf2_geometry_msgs/tf2_geometry_msgs.hpp>)
++#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
++#else
+ #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
++#endif
+ #include <tf2_ros/transform_broadcaster.h>
+ 
+ #include <atomic>
+@@ -53,7 +61,11 @@
+ #include <Eigen/Eigen>
+ #include <boost/date_time/posix_time/posix_time.hpp>
+ #include <boost/filesystem.hpp>
++#if __has_include(<cv_bridge/cv_bridge.hpp>)
++#include <cv_bridge/cv_bridge.hpp>
++#else
+ #include <cv_bridge/cv_bridge.h>
++#endif
+ 
+ namespace ov_core {
+ class YamlParser;
+@@ -86,6 +98,11 @@ public:
+    */
+   ROS2Visualizer(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<VioManager> app, std::shared_ptr<Simulator> sim = nullptr);
+ 
++  /**
++   * @brief Destructor to ensure proper cleanup of ROS 2 resources
++   */
++  ~ROS2Visualizer();
++
+   /**
+    * @brief Will setup ROS subscribers and callbacks
+    * @param parser Configuration file parser
+@@ -180,6 +197,8 @@ protected:
+ 
+   // Thread atomics
+   std::atomic<bool> thread_update_running;
++  std::atomic<bool> run_visualize_thread;
++  std::shared_ptr<std::thread> thread_visualize;
+ 
+   /// Queue up camera measurements sorted by time and trigger once we have
+   /// exactly one IMU measurement with timestamp newer than the camera measurement
+diff --git a/ov_msckf/src/ros/ROS2Visualizer.cpp b/ov_msckf/src/ros/ROS2Visualizer.cpp
+index e91cd74..48dd83a 100644
+--- a/ov_msckf/src/ros/ROS2Visualizer.cpp
++++ b/ov_msckf/src/ros/ROS2Visualizer.cpp
+@@ -36,7 +36,7 @@ using namespace ov_type;
+ using namespace ov_msckf;
+ 
+ ROS2Visualizer::ROS2Visualizer(std::shared_ptr<rclcpp::Node> node, std::shared_ptr<VioManager> app, std::shared_ptr<Simulator> sim)
+-    : _node(node), _app(app), _sim(sim), thread_update_running(false) {
++    : _node(node), _app(app), _sim(sim), thread_update_running(false), run_visualize_thread(true) {
+ 
+   // Setup our transform broadcaster
+   mTfBr = std::make_shared<tf2_ros::TransformBroadcaster>(node);
+@@ -149,17 +149,50 @@ ROS2Visualizer::ROS2Visualizer(std::shared_ptr<rclcpp::Node> node, std::shared_p
+ 
+   // Start thread for the image publishing
+   if (_app->get_params().use_multi_threading_pubs) {
+-    std::thread thread([&] {
++    thread_visualize = std::make_shared<std::thread>([this] {
+       rclcpp::Rate loop_rate(20);
+-      while (rclcpp::ok()) {
++      while (rclcpp::ok() && run_visualize_thread) {
+         publish_images();
+         loop_rate.sleep();
+       }
+     });
+-    thread.detach();
+   }
+ }
+ 
++ROS2Visualizer::~ROS2Visualizer() {
++  // Signal and join the visualize thread
++  run_visualize_thread = false;
++  if (thread_visualize && thread_visualize->joinable()) {
++    thread_visualize->join();
++  }
++
++  // Manually reset all publishers and subscriptions
++  it_pub_tracks.shutdown();
++  it_pub_loop_img_depth.shutdown();
++  it_pub_loop_img_depth_color.shutdown();
++  pub_poseimu.reset();
++  pub_odomimu.reset();
++  pub_pathimu.reset();
++  pub_points_msckf.reset();
++  pub_points_slam.reset();
++  pub_points_aruco.reset();
++  pub_points_sim.reset();
++  pub_loop_pose.reset();
++  pub_loop_extrinsic.reset();
++  pub_loop_point.reset();
++  pub_loop_intrinsics.reset();
++  mTfBr.reset();
++  sub_imu.reset();
++  for (auto &sub : subs_cam)
++    sub.reset();
++  for (auto &sync : sync_cam)
++    sync.reset();
++  for (auto &sub : sync_subs_cam)
++    sub.reset();
++  pub_pathgt.reset();
++  pub_posegt.reset();
++}
++
+ void ROS2Visualizer::setup_subscribers(std::shared_ptr<ov_core::YamlParser> parser) {
+ 
+   // We need a valid parser
+diff --git a/ov_msckf/src/ros/ROSVisualizerHelper.h b/ov_msckf/src/ros/ROSVisualizerHelper.h
+index 14c1514..81bf856 100644
+--- a/ov_msckf/src/ros/ROSVisualizerHelper.h
++++ b/ov_msckf/src/ros/ROSVisualizerHelper.h
+@@ -34,8 +34,12 @@
+ #include <sensor_msgs/msg/point_cloud2.hpp>
+ #include <sensor_msgs/point_cloud2_iterator.hpp>
+ #include <tf2/transform_datatypes.h>
++#if __has_include(<tf2_geometry_msgs/tf2_geometry_msgs.hpp>)
++#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
++#else
+ #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+ #endif
++#endif
+ 
+ namespace ov_type {
+ class PoseJPL;
+diff --git a/ov_msckf/src/run_simulation.cpp b/ov_msckf/src/run_simulation.cpp
+index 7b5ee4e..4f9c5cc 100644
+--- a/ov_msckf/src/run_simulation.cpp
++++ b/ov_msckf/src/run_simulation.cpp
+@@ -180,9 +180,15 @@ int main(int argc, char **argv) {
+   // Final visualization
+ #if ROS_AVAILABLE == 1
+   viz->visualize_final();
++  viz.reset();
++  sys.reset();
++  sim.reset();
+   ros::shutdown();
+ #elif ROS_AVAILABLE == 2
+   viz->visualize_final();
++  viz.reset();
++  sys.reset();
++  sim.reset();
+   rclcpp::shutdown();
+ #endif
+ 
+diff --git a/ov_msckf/src/run_subscribe_msckf.cpp b/ov_msckf/src/run_subscribe_msckf.cpp
+index 6a5b341..3d5f4b9 100644
+--- a/ov_msckf/src/run_subscribe_msckf.cpp
++++ b/ov_msckf/src/run_subscribe_msckf.cpp
+@@ -115,8 +115,12 @@ int main(int argc, char **argv) {
+   // Final visualization
+   viz->visualize_final();
+ #if ROS_AVAILABLE == 1
++  viz.reset();
++  sys.reset();
+   ros::shutdown();
+ #elif ROS_AVAILABLE == 2
++  viz.reset();
++  sys.reset();
+   rclcpp::shutdown();
+ #endif
+ 
