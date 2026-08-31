@@ -122,6 +122,36 @@ BAG_PLAY_RATE=0.5 bash "$runner" "$repo" "$ov" "$bag" "$root" \
 must omit it. A failed/partial run directory must be moved aside before a
 retry because the runner intentionally refuses to overwrite results.
 
+Export the FRL trajectory for offline validation. Use the ROS installation's
+Python here because the exporter reads ROS 2 message types directly:
+
+```bash
+/usr/bin/python3 \
+  scripts/pipeline/chance_constrained/propagation/ubuntu/munfrl_ground_truth.py \
+  --bag "$bag" \
+  --source frl \
+  --output "$root/frl_ground_truth.csv"
+```
+
+FRL is the default 6DoF reference. `--source ppk` exports position without a
+meaningful orientation, while `--source fix` converts WGS84 fixes to a local
+ENU frame. All three are offline references and are never supplied to
+OpenVINS.
+
+Evaluate a completed replay using rigid SE(3) trajectory alignment with scale
+fixed to one:
+
+```bash
+python3 scripts/pipeline/chance_constrained/propagation/evaluate_munfrl_run.py \
+  --odometry "$root/raw/bell412_dataset1_nominal_15hz/odometry.csv" \
+  --ground-truth "$root/frl_ground_truth.csv" \
+  --output-dir "$root/evaluation/bell412_dataset1_nominal_15hz"
+```
+
+The evaluator writes `metrics.json` and synchronized
+`trajectory_errors.csv`. Full-trajectory alignment removes the arbitrary
+OpenVINS origin and heading but never rescales the estimated trajectory.
+
 Create `source_manifest.json` by supplying the three datasets and all 12
 `raw/<run>/config/config_manifest.json` files through the repeatable
 `--openvins-config-manifest` argument:

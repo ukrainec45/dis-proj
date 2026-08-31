@@ -12,7 +12,7 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import QoSProfile, ReliabilityPolicy, qos_profile_sensor_data
 from sensor_msgs.msg import CompressedImage, Image
 
 
@@ -67,7 +67,11 @@ class CompressedFrameFilter(Node):
             ),
         )
         self.writer.writeheader()
-        self.publisher = self.create_publisher(Image, "output", qos_profile_sensor_data)
+        # OpenVINS' image_transport subscriber requests reliable delivery.  Keep
+        # the bag-facing subscription best-effort, but publish decoded frames
+        # reliably so the two endpoints can actually connect.
+        output_qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE)
+        self.publisher = self.create_publisher(Image, "output", output_qos)
         self.subscription = self.create_subscription(
             CompressedImage, "input", self.on_image, qos_profile_sensor_data
         )

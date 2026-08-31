@@ -139,6 +139,8 @@ def main():
         "filepath_est": f'"{run_output / "openvins_state.txt"}"',
         "filepath_std": f'"{run_output / "openvins_state_std.txt"}"',
         "filepath_gt": f'"{run_output / "openvins_groundtruth.txt"}"',
+        "init_dyn_use": "true",
+        "init_dyn_mle_max_time": "0.5",
     }
     for key, value in replacements.items():
         text = replace_yaml_value(text, key, value)

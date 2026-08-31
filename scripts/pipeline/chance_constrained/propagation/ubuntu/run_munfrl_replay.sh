@@ -93,5 +93,9 @@ for required in diagnostics.csv frame_schedule.csv odometry.csv; do
     echo "missing or empty replay output: $run_output/$required" >&2
     exit 1
   fi
+  if [[ "$(wc -l < "$run_output/$required")" -le 1 ]]; then
+    echo "replay output contains only a header: $run_output/$required" >&2
+    exit 1
+  fi
 done
 echo "$run_output"
