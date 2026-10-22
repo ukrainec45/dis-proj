@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "campaign": "smoke",
+  "frame_count": 20,
+  "reference_modes": [
+    "aerial",
+    "satellite"
+  ],
+  "pose_world_frame": "anyvisloc_ned_attitude",
+  "seed": 42,
+  "prior": {
+    "source": "synthetic_gaussian_from_gt",
+    "covariance_xy_m2": [
+      [
+        400,
+        0
+      ],
+      [
+        0,
+        400
+      ]
+    ]
+  },
+  "search_probability_mass": 0.99,
+  "rectified_gsd_m": 0.5,
+  "max_image_pixels": 16000000,
+  "maximum_projection_condition": 100,
+  "minimum_map_coverage": 0.95,
+  "geometric_R_floor_m": 0.5,
+  "sift": {
+    "nfeatures": 6000,
+    "ratio_threshold": 0.75,
+    "minimum_good_matches": 12,
+    "minimum_inliers": 8,
+    "minimum_inlier_ratio": 0.4,
+    "ransac_threshold_px": 3,
+    "maximum_median_reprojection_error_px": 3
+  },
+  "license_marker": "AnyVisLoc Dataset License; user-provided ephemeral Colab copy; see upstream docs/LICENSE_DATASET.md"
+}

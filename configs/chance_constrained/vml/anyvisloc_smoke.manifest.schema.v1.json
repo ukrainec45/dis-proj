@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnyVisLoc smoke manifest v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "campaign",
+    "run_identity",
+    "status",
+    "dataset_fingerprint",
+    "dataset_files",
+    "matcher",
+    "matcher_fingerprint",
+    "config_fingerprint",
+    "validation_passed",
+    "deployment_status",
+    "supported_domain",
+    "license_marker",
+    "target_platform_calibrated",
+    "R_calibrated",
+    "prior_source",
+    "limitations"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "campaign": {
+      "const": "smoke"
+    },
+    "run_identity": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "insufficient_frames"
+      ]
+    },
+    "dataset_fingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "dataset_files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-f0-9]{64}$"
+      }
+    },
+    "matcher": {
+      "const": "sift"
+    },
+    "matcher_fingerprint": {
+      "type": "string"
+    },
+    "config_fingerprint": {
+      "type": "string"
+    },
+    "validation_passed": {
+      "const": {
+        "aerial": false,
+        "satellite": false
+      }
+    },
+    "deployment_status": {
+      "const": "not_fitted_smoke_only"
+    },
+    "supported_domain": {
+      "type": "null"
+    },
+    "license_marker": {
+      "type": "string"
+    },
+    "target_platform_calibrated": {
+      "const": false
+    },
+    "R_calibrated": {
+      "const": false
+    },
+    "prior_source": {
+      "const": "synthetic_gaussian_from_gt"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

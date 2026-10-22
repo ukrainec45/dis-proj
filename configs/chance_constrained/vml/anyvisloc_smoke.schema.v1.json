@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnyVisLoc smoke config v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "campaign",
+    "frame_count",
+    "reference_modes",
+    "pose_world_frame",
+    "seed",
+    "prior",
+    "search_probability_mass",
+    "minimum_map_coverage",
+    "license_marker",
+    "sift",
+    "rectified_gsd_m",
+    "max_image_pixels",
+    "maximum_projection_condition",
+    "geometric_R_floor_m"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "campaign": {
+      "const": "smoke"
+    },
+    "frame_count": {
+      "const": 20
+    },
+    "reference_modes": {
+      "const": [
+        "aerial",
+        "satellite"
+      ]
+    },
+    "pose_world_frame": {
+      "enum": [
+        "enu",
+        "dataset",
+        "anyvisloc_ned_attitude"
+      ]
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "prior": {
+      "type": "object",
+      "required": [
+        "source",
+        "covariance_xy_m2"
+      ],
+      "properties": {
+        "source": {
+          "const": "synthetic_gaussian_from_gt"
+        },
+        "covariance_xy_m2": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "search_probability_mass": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "exclusiveMaximum": 1
+    },
+    "minimum_map_coverage": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "license_marker": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sift": {
+      "type": "object",
+      "required": [
+        "nfeatures",
+        "ratio_threshold",
+        "minimum_good_matches",
+        "minimum_inliers",
+        "minimum_inlier_ratio",
+        "ransac_threshold_px",
+        "maximum_median_reprojection_error_px"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "nfeatures": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "ratio_threshold": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "minimum_good_matches": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "minimum_inliers": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "minimum_inlier_ratio": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "ransac_threshold_px": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "maximum_median_reprojection_error_px": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "rectified_gsd_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "max_image_pixels": {
+      "type": "integer",
+      "exclusiveMinimum": 0
+    },
+    "maximum_projection_condition": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "geometric_R_floor_m": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    }
+  },
+  "$comment": "Runtime also validates PSD covariance, SIFT ratios and minimum correspondence counts."
+}
