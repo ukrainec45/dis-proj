@@ -166,3 +166,30 @@ Resampling preserves OpenCV pixel-centre coordinates in the output transform.
 The crop's physical extent, search mass and coverage/acceptance thresholds are
 unchanged. The notebook reloads planar and smoke_localizer as well as the runner;
 new results go to anyvisloc-smoke-v3. Files still require manual copying to Drive.
+
+## Data audit and coverage control
+
+Use `notebooks/vml_anyvisloc_audit.ipynb` in hosted Colab for full aerial
+inventory, three separate coverage diagnostics, a frozen scene holdout, and
+an isolated replay of the 16 retained Scene_05 coverage rejects. See
+[the audit guide](../../../../docs/vml_data_audit.md) for the workflow,
+interfaces, output interpretation and limitations. No real-data campaign runs
+locally, and no planner or outcome model is changed by this audit.
+
+## Working-scene available-crop campaign
+
+`notebooks/vml_anyvisloc_working.ipynb` runs the frozen geometry candidates of
+working scenes only, with `coverage_policy="available_crop"`. The coverage
+threshold is diagnostic rather than a rejection gate. Source checks, per-frame
+checkpoints, holdout protection, accepted-error metrics and a clearly labelled
+legacy-policy counterfactual are implemented by `working_campaign.py`.
+Old audit/control outputs are preserved. See the audit guide for details.
+
+## Correct-fix probability training
+
+Use `notebooks/vml_outcome_training.ipynb` for hosted-Colab fitting of the
+prepared numerical tables. `outcome_model.py` fits a constant baseline and two
+regularized logistic models, performs scene-separated validation, exports
+checksummed JSON coefficients/scalers, and freezes candidates for future final
+testing. See [the training and planning guide](../../../../docs/vml_outcome_training.md).
+No planner wiring or route-risk certification is included.

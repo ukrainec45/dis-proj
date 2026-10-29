@@ -10,3 +10,14 @@ __pycache__/
 *.bag
 *.db3
 *.mcap
+
+# Local test artifacts and caches
+.pytest_cache/
+/misc/pytest*/
+
+# Local notebook recovery backups
+/misc/notebook_evidence/
+
+# Microsoft Office lock and recovery files
+~$*
+~WRL*.tmp

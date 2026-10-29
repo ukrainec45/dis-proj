@@ -18,9 +18,12 @@ GEOMETRY_REJECTIONS = {
 
 
 def localize(image, K, dist, rotation, agl, prior_mean, prior_covariance,
-             search_probability_mass, reference, config):
+             search_probability_mass, reference, config, *, coverage_policy="strict"):
+    if coverage_policy not in ("strict", "audit_clipped", "available_crop"):
+        raise ValueError("Unknown coverage policy")
     start = time.perf_counter()
-    diagnostics = {"R_calibrated": False, "yaw_available": False}
+    diagnostics = {"R_calibrated": False, "yaw_available": False,
+                   "coverage_policy": coverage_policy}
 
     def result(reason, z=None, R=None):
         return dict(status="accepted" if z is not None else "reject", reason=reason,
@@ -45,7 +48,7 @@ def localize(image, K, dist, rotation, agl, prior_mean, prior_covariance,
                        reference_gsd_m=[abs(transform.a), abs(transform.e)],
                        footprint_area_m2=float(abs(cv2.contourArea(footprint.astype(np.float32)))),
                        search_area_m2=float(crop.shape[0]*crop.shape[1]*abs(transform.determinant)))
-    if coverage < config["minimum_map_coverage"]:
+    if coverage < config["minimum_map_coverage"] and coverage_policy == "strict":
         return result("insufficient_map_coverage")
     policy = config["sift"]
     sift = cv2.SIFT_create(nfeatures=policy["nfeatures"])

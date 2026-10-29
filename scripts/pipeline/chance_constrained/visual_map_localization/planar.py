@@ -53,8 +53,8 @@ def rectify(image, K, dist, rotation, agl, gsd, max_pixels, max_condition):
     return query, valid, offsets, camera_pixel, condition
 
 
-def search_crop(reference, footprint, prior_xy, covariance, mass, max_pixels,
-                *, matching_gsd_m=None):
+def search_bounds(reference, footprint, prior_xy, covariance, mass):
+    """Native pixel bounds and coverage, without allocating a crop."""
     extent = covariance_extent(covariance, mass)
     lower = np.min(footprint, axis=0) + prior_xy - extent
     upper = np.max(footprint, axis=0) + prior_xy + extent
@@ -65,6 +65,14 @@ def search_crop(reference, footprint, prior_xy, covariance, mass, max_pixels,
     requested = np.prod((end-start).astype(float))
     h, w = reference.image.shape[:2]
     a, b = np.maximum(start, 0), np.minimum(end, [w, h])
+    coverage = float(np.prod(np.maximum(b-a, 0))/requested)
+    return start, end, a, b, coverage
+
+
+def search_crop(reference, footprint, prior_xy, covariance, mass, max_pixels,
+                *, matching_gsd_m=None):
+    start, end, a, b, coverage = search_bounds(
+        reference, footprint, prior_xy, covariance, mass)
     if np.any(b-a < 2):
         raise ValueError("map_outside")
     native_shape = b-a
@@ -86,5 +94,5 @@ def search_crop(reference, footprint, prior_xy, covariance, mass, max_pixels,
         # OpenCV resize aligns pixel centres: src=(dst+.5)*scale-.5.
         transform = (transform * type(transform).translation(*((scale-1)/2))
                      * type(transform).scale(*scale))
-    return crop, transform, float(np.prod(native_shape)/requested)
+    return crop, transform, coverage
 
