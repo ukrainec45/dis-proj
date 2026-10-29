@@ -1,69 +1,90 @@
-﻿# VML increment status
+# Стан дослідження візуальної прив’язки на AnyVisLoc
 
-Updated: 2026-10-22. Scope is governed by vml_implementation_plan.md.
+Оновлено: 2026-10-29. Наведені нижче етапи описують історію, а не одночасні незавершені завдання. Початковий розширений план — [vml_implementation_plan.md](vml_implementation_plan.md). Фактичний виконаний обсяг вужчий. [Пояснення чисел і графіків](vml_results_explained.md).
 
-## Completed milestone: real-data smoke data flow
+## Поточний результат
 
-Source: saved outputs of notebooks/vml_anyvisloc_smoke.ipynb, execution counts
-17 (summary) and 19 (reject analysis), output directory anyvisloc-smoke-v3.
-The user executed the notebook in hosted Colab; the agent read saved outputs.
+- Перевірено дані трьох сцен; Scene_05 і Scene_07 — робочі, Scene_21 — для остаточного тесту без перегляду результатів зіставлення.
+- Виконано всі 996 зафіксованих спроб SIFT з аерофотокартою без порога покриття 95%.
+- Навчено й оцінено три варіанти прогнозу у двох напрямках. Поточна ознака карти погіршила логарифмічну втрату в обох напрямках. Ймовірності не придатні для підключення до планувальника.
+- Усі реальні зіставлення та навчання користувач виконав у віддаленому Colab. Локально перевірялися збережені числа й синтетичні тести.
+- `validation_passed=false`, остаточна Scene_21 не оцінювалася; матриця похибок `R` не калібрована, оцінка повороту недоступна, планувальник не змінений.
 
-Dataset: AnyVisLoc Scene_05; first 20 altitude-eligible frames in sorted order.
-Prior: user-approved synthetic Gaussian XY prior, not recorded VIO estimates.
-Each of the same 20 frames was evaluated against each reference map mode.
+## Початковий запуск на 20 кадрах
 
-| Mode | Trials | Accepted | Rejects | Accepted position error |
+Джерело: збережені виводи `notebooks/vml_anyvisloc_smoke.ipynb`, клітинки 17 і 19, каталог `anyvisloc-smoke-v3`. Перші 20 придатних за висотою кадрів Scene_05 у сортованому порядку. Попередні координати отримано додаванням погодженого синтетичного нормального шуму до еталона; це не запис одометрії.
+
+| Карта | Спроб | Прийнято | Відмов | Похибка прийнятих |
 | --- | ---: | ---: | ---: | --- |
-| aerial | 20 | 4 | 16 | All 4 within 1 m according to retained summary |
-| satellite | 20 | 0 | 20 | No accepted measurements |
+| Аерофото | 20 | 4 | 16 | Усі 4 в межах 1 м за збереженим зведенням |
+| Супутникова | 20 | 0 | 20 | Прийнятих немає |
 
-Reasons retained by the result-only analysis:
+Аерофото: 16 `insufficient_map_coverage`. Супутникова: 16 таких самих відмов, 3 `insufficient_inliers`, 1 `insufficient_matches`. Шістнадцять спроб кожного режиму не дійшли до SIFT через поріг покриття. Послідовні 20 кадрів не представляють різні території чи польоти.
 
-- aerial: 4 accepted_xy_uncalibrated; 16 insufficient_map_coverage.
-- satellite: 16 insufficient_map_coverage; 3 insufficient_inliers;
-  1 insufficient_matches.
+Помилку виділення пам’яті для фрагмента в початковій роздільності виправлено: карта приводиться до масштабу зіставлення до перевірки бюджету пікселів; перетворення враховує центри пікселів. Тоді пороги не послаблювалися; на тому етапі пройшли 14 синтетичних тестів. Запуск підтвердив роботу прийняття/відмов, контрольних сум і збереження в Drive, а не придатність супутникового режиму чи польотні ймовірності.
 
-The native-resolution crop allocation failure is resolved. Reference images
-now use the configured matching GSD before the matcher pixel-budget check,
-with pixel-centre-aware affine transforms. Coverage and matcher thresholds
-were not relaxed. Synthetic software verification currently passes 14 tests.
+## Підготовлений аудит і його фактичне виконання — 2026-10-28
 
-The smoke exercises the accepted XY branch on real aerial-reference data and
-the rejection branch in both modes, source fingerprinting, Drive checkpoints,
-manifest/summary export and result inspection. It does not prove satellite
-feasibility or estimate flight probabilities. These 20 consecutive frames are
-not a representative cross-scene sample. Sixteen trials per mode did not reach
-matching because the existing 95% crop coverage policy rejected them.
+Окремі `audit.py` і `vml_anyvisloc_audit.ipynb` перевіряють усі кадри, розділяють фактичну видиму ділянку, запас пошуку й зміщення попередньої оцінки, фіксують тестові сцени. Початковий строгий режим локалізатора лишається типовим. [Інструкція](vml_data_audit.md).
 
-## Not completed
+Збережено `results/vml/anyvisloc-audit-v1/`, `anyvisloc-coverage-control-v1/`, перевірку — `audit-review-v1/`. Усі 3498 записів кадрів прочитані:
 
-- Full inventory and geometry/relief eligibility manifest.
-- Deterministic maximin/medoid pilot scene selection (three scenes).
-- Training-fold matcher threshold tuning and held-out matcher comparison.
-- Conditional outcome model, local/gross residual mixture, calibrated post-match
-  R and yaw reliability gate. The smoke's R remains an uncalibrated XY
-  approximation; yaw is unavailable.
-- JSON/NPZ model export/loader, supported-domain and extrapolation handling.
-- Five-fold GroupKFold validation and bootstrap/calibration/coverage reports.
-- SP-LightGlue-GIM evaluation if SIFT fails the validation gate. Zero accepted
-  satellite smoke trials is not itself that held-out validation gate.
-- Full campaign, stress sensitivity report, planner opportunity generator and
-  conservative bound integration.
+| Сцена | Усього кадрів | Геометричні кандидати | Проходять початкові 95% | Роль |
+| --- | ---: | ---: | ---: | --- |
+| Scene_05 | 1118 | 787 | 147 | Робоча |
+| Scene_07 | 1219 | 209 | 205 | Робоча |
+| Scene_21 | 1161 | 1082 | 978 | Остаточний тест |
 
-validation_passed=false for both modes. There is no trained model; current
-artifacts remain not_fitted_smoke_only. The plan's production_enabled policy
-for the best trained artifact is unchanged. target_platform_calibrated=false.
+У Scene_07 є 1006 виключень через висоту понад 120 м; це не доведені відмови через текстуру.
 
-## Next work and data dependency
+Окремий контроль 16 початкових відмов Scene_05 без порога покриття прийняв усі 16. Мінімальна/медіанна/максимальна похибка: 0,0401/0,1440/0,6444 м. У 15 випадках навіть навколо еталона бракує запасу для порога 95%; лише L05_0019 не проходив виключно через зміщення попередньої оцінки. У 8 випадках видима ділянка повністю в межах растра, у 8 — частково поза ними. Категорії чинників перекриваються.
 
-Build full inventory/eligibility before pilot scene selection and do not tune
-thresholds to make this smoke succeed. Only Scene_05 is currently known to be
-available. Pilot needs three scenes, while the planned validation requires at
-least five eligible scenes per map mode. Inventory all available scenes before
-selecting pilot scenes by the agreed feature-based algorithm. Additional scene
-archives and space-efficient sequential staging require the user's data paths.
+Це підтвердило втрату правильних прив’язок у вибраних випадках, але не довело універсальної переваги вимкнення порога. Контрольні суми таблиць, ідентичність спроб, попередні оцінки й підсумки узгоджені; похибки перераховані зі збережених координат. Самі ZIP, NPZ, DSM і зображення локально повторно не перевірялися.
 
-The user copies source/config files to Drive manually. Do not reintroduce an
-automatic code upload/bootstrap. Read available saved notebook outputs before
-requesting copied results. Never execute the notebook or real-data campaign
-locally.
+Карти мають нерегулярні зони зображення й чорне заповнення всередині прямокутного растра. Геометричне покриття це заповнення не враховує. Список кандидатів не доводить придатність текстури, відсутність паралаксу чи правильність наближення поверхні площиною.
+
+## Повна кампанія без порога покриття — 2026-10-28
+
+Після погодження користувача підготовлено `working_campaign.py` і `vml_anyvisloc_working.ipynb`. Режим `available_crop` вимикає лише відмову за порогом покриття; інші налаштування SIFT незмінні. Scene_21 заборонена для зіставлення. Є перевірка джерел і відновлення кожної спроби з контрольних файлів.
+
+Користувач виконав усі 996 спроб. Результати — `anyvisloc-working-available-crop-v1/`, перевірка й навчальні таблиці — `working-review-v1/`.
+
+| Сцена | Усього | Прийнято до 3 м | Прийнято понад 3 м | Відмов |
+| --- | ---: | ---: | ---: | ---: |
+| Scene_05 | 787 | 183 | 48 | 556 |
+| Scene_07 | 209 | 159 | 5 | 45 |
+| Разом | 996 | 342 | 53 | 601 |
+
+Максимальна прийнята похибка — 432,31 м. Старий поріг 95%, повторно застосований до тих самих результатів, залишив би 234 прив’язки до 3 м, 7 понад 3 м і 755 відмов. Без порога додано 108 правильних за критерієм 3 м та 46 неточних прийнятих прив’язок. Частка неточних серед прийнятих зростає з 7/241 до 53/395. Це компроміс, а не безумовне покращення. Початкові 16 контрольних прив’язок відтворилися точно, але не представляли всіх випадків низького покриття.
+
+Для Scene_05 причини відмов: 272 недостатні відповідності й 284 недостатня кількість/частка геометрично узгоджених відповідностей. Реальна видима ділянка частково поза растром у 558/787 випадках проти 4/209 у Scene_07. Це описовий зв’язок, не повний причинний розбір. Таблиця — `model-review-v1/scene_failure_breakdown.csv`.
+
+## Навчання і початковий результат — 2026-10-28
+
+Реалізовано `outcome_model.py`, `vml_outcome_training.ipynb`; перевірки локально лише синтетичні. Три кандидати — стала частота, геометрична логістична регресія, геометрія плюс щільність точок карти. Ціль: прийнята прив’язка з похибкою до 3 м. Дані та специфікація явно фіксують стандартне відхилення 20 м на вісь. Еталонні XY, фактична похибка попередньої оцінки та діагностика після зіставлення не є вхідними ознаками.
+
+Користувач навчив на Scene_05, порівняв на Scene_07, потім зафіксував повторно навчені на обох сценах моделі. Збережено `correct-fix-model-v1/`. Контрольні суми шести моделей і таблиць, прогнози та метрики узгоджені.
+
+Логарифмічні втрати для сталої/геометрії/геометрії з картою: 1,1731/1,7399/2,3346. Середні прогнози 23,25%/12,54%/10,34% за фактичних 76,08%. Додавання карти підвищило AUC з 0,8164 до 0,8730, але погіршило основний показник. Вибір сталої як найменш поганого кандидата не є дозволом застосування. Після повторного навчання на обох сценах стала дорівнює 342/996=34,34%; незалежної перевірки цієї повторно навченої моделі ще немає.
+
+## Зворотний дослід і результат — 2026-10-28
+
+Після перегляду першого результату погоджено навчання на Scene_07, оцінювання на Scene_05. Окремі `run_reverse_diagnostic()` і `vml_outcome_reverse.ipynb` не змінюють вихідні таблиці, результати першого запуску або Scene_21. Немає нового остаточного вибору чи повторного навчання на об’єднаних сценах.
+
+Збережено `correct-fix-reverse-v1/`. Усі три контрольні суми моделей, вхідні таблиці, 2361 прогноз, відповіді та метрики перевірено без навчання. Геометрія покращила логарифмічну втрату відносно сталої: 1,1613 → 1,1119, але прогнозує 64,27% за фактичних 23,25%. Додавання карти погіршило втрату до 2,7555 та підвищило середній прогноз до 93,03%.
+
+Поточна ознака карти погіршує ймовірнісні прогнози в обох напрямках. Жоден напрямок не підтверджує калібровані ймовірності для планувальника. Порівняння — `model-review-v1/direction_comparison.md`, перевірка — `reverse_verification.json`. Це діагностика на тих самих двох територіях, а не незалежний остаточний тест.
+
+## Що залишається поза підтвердженим результатом
+
+- Повна оцінка рельєфу, паралаксу й маски справжнього зображення.
+- Початковий задум відбору трьох пілотних сцен за характеристиками й перевірки на п’яти групах сцен.
+- Налаштування порогів лише на навчальних даних, порівняння зіставлювачів і супутниковий повний дослід.
+- Окремі ймовірності відмов, точних та помилкових прийнять; суміш залишкових похибок, калібрована `R`, надійність повороту.
+- Перевірка на цільовому обладнанні, реальна одометрія, генератор можливостей корекції для маршруту й оцінювання ризику прибуття.
+
+Дослідні моделі й JSON-завантажувач уже реалізовані; старе твердження «моделі ще немає» стосувалося лише етапу початкових 20 кадрів. Розширений початковий план не слід сприймати як перелік уже виконаного. Новий метод лише запропонований у [vml_method_selection.md](vml_method_selection.md); код цього методу не реалізовано.
+
+## Перегляд напряму за пропозицією користувача — 2026-10-29
+
+Наступний крок змінено: відтворити готові моделі та конвеєр AnyVisLoc, встановити слабкі умови саме цих рішень, після чого обрати мотивоване покращення. Розвиток нового опису карти/випадкового лісу відкладено. Перевірено поточні авторські модулі: готові зіставлювачі, CAMP, DSM/PnP; окремий режим зіставлення використовує фрагмент за еталонною позицією. Реального запуску готових моделей і завантаження ваг ще не виконано. [Переглянута стратегія](vml_anyvisloc_baseline_strategy.md).
