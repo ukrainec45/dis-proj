@@ -1,0 +1,156 @@
+{
+  "evaluation_count": 787,
+  "evaluation_positive_count": 183,
+  "evaluations": {
+    "constant": {
+      "brier_score": 0.4574933312140837,
+      "calibration_bins": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.2,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.4,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        },
+        {
+          "bin_lower": 0.4,
+          "bin_upper": 0.6,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        },
+        {
+          "bin_lower": 0.6,
+          "bin_upper": 0.8,
+          "count": 787,
+          "mean_probability": 0.7607655502392345,
+          "observed_success": 0.23252858958068615
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 1.0,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        }
+      ],
+      "log_loss": 1.161303293534185,
+      "mean_probability": 0.7607655502392345,
+      "observed_success_rate": 0.23252858958068615,
+      "outside_training_feature_ranges_count": 0,
+      "positive_count": 183,
+      "roc_auc": 0.5,
+      "sample_count": 787
+    },
+    "geometry": {
+      "brier_score": 0.33244749404039586,
+      "calibration_bins": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.2,
+          "count": 121,
+          "mean_probability": 0.11738186088952846,
+          "observed_success": 0.008264462809917356
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.4,
+          "count": 89,
+          "mean_probability": 0.3179572744636854,
+          "observed_success": 0.0449438202247191
+        },
+        {
+          "bin_lower": 0.4,
+          "bin_upper": 0.6,
+          "count": 112,
+          "mean_probability": 0.49341788231164496,
+          "observed_success": 0.07142857142857142
+        },
+        {
+          "bin_lower": 0.6,
+          "bin_upper": 0.8,
+          "count": 104,
+          "mean_probability": 0.7076073598775061,
+          "observed_success": 0.15384615384615385
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 1.0,
+          "count": 361,
+          "mean_probability": 0.9263505743740948,
+          "observed_success": 0.4265927977839335
+        }
+      ],
+      "log_loss": 1.1119461840207219,
+      "mean_probability": 0.6426530218425845,
+      "observed_success_rate": 0.23252858958068615,
+      "outside_training_feature_ranges_count": 537,
+      "positive_count": 183,
+      "roc_auc": 0.7981579994933594,
+      "sample_count": 787
+    },
+    "geometry_and_map_features": {
+      "brier_score": 0.6606891964932384,
+      "calibration_bins": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.2,
+          "count": 2,
+          "mean_probability": 0.18660806358925383,
+          "observed_success": 0.0
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.4,
+          "count": 8,
+          "mean_probability": 0.34134137801797954,
+          "observed_success": 0.0
+        },
+        {
+          "bin_lower": 0.4,
+          "bin_upper": 0.6,
+          "count": 19,
+          "mean_probability": 0.5140715749237179,
+          "observed_success": 0.05263157894736842
+        },
+        {
+          "bin_lower": 0.6,
+          "bin_upper": 0.8,
+          "count": 44,
+          "mean_probability": 0.7230243982964609,
+          "observed_success": 0.06818181818181818
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 1.0,
+          "count": 714,
+          "mean_probability": 0.9628376439176701,
+          "observed_success": 0.2507002801120448
+        }
+      ],
+      "log_loss": 2.7554875629898543,
+      "mean_probability": 0.930305537937908,
+      "observed_success_rate": 0.23252858958068615,
+      "outside_training_feature_ranges_count": 559,
+      "positive_count": 183,
+      "roc_auc": 0.671588318315058,
+      "sample_count": 787
+    }
+  },
+  "final_refit_performed": false,
+  "final_test_evaluated": false,
+  "independent_final_test": false,
+  "map_feature_evaluation_log_loss_gain": -1.6435413789691324,
+  "selected_by_validation": null,
+  "training_count": 209,
+  "training_positive_count": 159,
+  "training_status": "reverse_working_scene_diagnostic_completed",
+  "validation_passed": false
+}

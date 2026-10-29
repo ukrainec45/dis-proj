@@ -1,0 +1,123 @@
+{
+  "primary_target": "accepted_and_horizontal_error_le_3m",
+  "target_threshold_m": 3.0,
+  "threshold_basis": "AnyVisLoc authors recommend 3/5/10 m evaluation; 3 m proposed before this campaign was inspected. This is not a mission safety requirement.",
+  "model_inputs": {
+    "constant": [],
+    "geometry": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels"
+    ],
+    "geometry_and_query_features": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels",
+      "log_query_keypoint_density_mpx"
+    ],
+    "geometry_and_map_features": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels",
+      "log_reference_keypoint_density_mpx"
+    ]
+  },
+  "input_meanings": {
+    "log_agl_m": "Natural log of supplied AGL in metres; GT/DSM-derived experimental input.",
+    "map_coverage": "Prior-centred rectangle coverage within raster bounds, computed before SIFT extraction/matching.",
+    "log_search_to_footprint_ratio": "Natural log of full requested prior-centred search area divided by supplied planar footprint area.",
+    "log_projection_condition": "Natural log of the rectification projection condition, computed before matching.",
+    "log_footprint_area_m2": "Natural log of planar footprint area from supplied K/attitude/AGL, independent of GT XY.",
+    "log_query_bbox_pixels": "Natural log of rectified query bounding-box pixel count; included as a geometry/scale control.",
+    "log_query_keypoint_density_mpx": "log(1 + query SIFT keypoints per million rectified bounding-box pixels). Query extraction precedes correspondence search. Proxy for feature content, not a blur measurement; affected by mask, scale and feature budget.",
+    "log_reference_crop_pixels": "Natural log of the reference crop pixel count; known before matching. Controls density denominator and resampling geometry.",
+    "log_reference_keypoint_density_mpx": "log(1 + reference SIFT keypoints per million crop pixels). Map-only proxy computed before correspondence search; affected by the 6000-feature budget, crop, resampling, padding and scene content. Not a pure texture or blur metric."
+  },
+  "split": {
+    "train": "Scene_05",
+    "validation": "Scene_07",
+    "final_test": "Scene_21 (not included; no matching outcomes observed)"
+  },
+  "prohibited_model_inputs": [
+    "GT XY",
+    "realized prior error",
+    "GT-centred coverage",
+    "actual footprint coverage at GT XY",
+    "accepted error",
+    "accept/reject status",
+    "good_matches",
+    "inliers",
+    "inlier_ratio",
+    "reprojection_error",
+    "scene_id",
+    "sample_id",
+    "split"
+  ],
+  "labels_file": "labels.csv",
+  "features_file": "features.csv",
+  "training_status": "not_fitted",
+  "scope": "Fixed SIFT/aerial map, synthetic XY prior sigma=20m, ideal attitude and DSM-derived AGL, domain 20-120m.",
+  "limitations": [
+    "Two working scenes and one unseen test scene provide limited cross-scene evidence.",
+    "Adjacent frames are correlated; do not randomly split frames across train and validation.",
+    "Raster coverage ignores internal padding; valid-image coverage is not established.",
+    "Query-keypoint density is available after query feature extraction but before map correspondence search.",
+    "R is uncalibrated; no flight risk model or scene-general probability guarantee is established.",
+    "Primary planner-oriented comparisons must not use query-image features as if they were known pre-flight.",
+    "Map keypoint density can saturate at the fixed detector budget; evaluate its utility rather than assuming it is an adequate map-quality metric."
+  ],
+  "sha256": {
+    "features": "6a350476f2fc1eef0e9f286652c8d41557e2ee5e24794e31af37010fe21a775b",
+    "labels": "a85c686e27c2423b2652602937bbcb45e042d80765b28fbcdbc878480a7147d2"
+  },
+  "input_availability": {
+    "geometry": "Supplied camera geometry and prior; future use requires available or specified planned values.",
+    "geometry_and_map_features": "Reference-map extraction can be performed offline for specified map crops; no query-image feature values are used.",
+    "geometry_and_query_features": "Online pre-match only: requires the actual camera image and query extraction. Not directly available to a pre-flight planner."
+  },
+  "experiment_domain": {
+    "matcher": "sift",
+    "reference_mode": "aerial",
+    "coverage_policy": "available_crop",
+    "prior_source": "synthetic_gaussian_from_gt",
+    "prior_covariance_xy_m2": [
+      [
+        400,
+        0
+      ],
+      [
+        0,
+        400
+      ]
+    ],
+    "agl_range_m": [
+      20,
+      120
+    ],
+    "matching_gsd_m": 0.5,
+    "search_probability_mass": 0.99,
+    "sift": {
+      "maximum_median_reprojection_error_px": 3,
+      "minimum_good_matches": 12,
+      "minimum_inlier_ratio": 0.4,
+      "minimum_inliers": 8,
+      "nfeatures": 6000,
+      "ransac_threshold_px": 3,
+      "ratio_threshold": 0.75
+    },
+    "camera_attitude": "dataset_ground_truth",
+    "agl_source": "dataset_GT_position_and_aerial_DSM"
+  }
+}

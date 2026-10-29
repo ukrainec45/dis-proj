@@ -1,0 +1,111 @@
+{
+  "artifact_sha256": {
+    "frozen_models/constant.json": "aa9b5bce1d62d0fa5e411c359707d99b2db5d5aaf2915b210697fef22f579ce8",
+    "frozen_models/geometry.json": "a896ca4d57d50efa14efa3c4fd0d74c19870ea1d41f51c8f101207fcd120cb60",
+    "frozen_models/geometry_and_map_features.json": "ca5d2568ba864e68a5287b05d543d2d807e838bfdd7fddd14b53de7eed1821d3",
+    "validation_models/constant.json": "85b15e7035c45b345286f12942d023b1a60b9f6b066ce783f4dd1b53dea2ad23",
+    "validation_models/geometry.json": "d82dbb8f86407a50ef7939bdc1f513d6a1ed2ec3e26ee094105736af81dcc5e4",
+    "validation_models/geometry_and_map_features.json": "34f79a9efcd351630ec845c294992082a39d901b578e64983751a10447e92f81"
+  },
+  "dataset_sha256": {
+    "feature_spec.json": "e1479abe3456cc597890de339fb0dce758ba9ea9c0a560e42572821b57c30cb8",
+    "features.csv": "6a350476f2fc1eef0e9f286652c8d41557e2ee5e24794e31af37010fe21a775b",
+    "labels.csv": "a85c686e27c2423b2652602937bbcb45e042d80765b28fbcdbc878480a7147d2"
+  },
+  "deployment_status": "research_only",
+  "experiment_domain": {
+    "agl_range_m": [
+      20,
+      120
+    ],
+    "agl_source": "dataset_GT_position_and_aerial_DSM",
+    "camera_attitude": "dataset_ground_truth",
+    "coverage_policy": "available_crop",
+    "matcher": "sift",
+    "matching_gsd_m": 0.5,
+    "prior_covariance_xy_m2": [
+      [
+        400,
+        0
+      ],
+      [
+        0,
+        400
+      ]
+    ],
+    "prior_source": "synthetic_gaussian_from_gt",
+    "reference_mode": "aerial",
+    "search_probability_mass": 0.99,
+    "sift": {
+      "maximum_median_reprojection_error_px": 3,
+      "minimum_good_matches": 12,
+      "minimum_inlier_ratio": 0.4,
+      "minimum_inliers": 8,
+      "nfeatures": 6000,
+      "ransac_threshold_px": 3,
+      "ratio_threshold": 0.75
+    }
+  },
+  "feature_meanings": {
+    "log_agl_m": "Natural log of supplied AGL in metres; GT/DSM-derived experimental input.",
+    "log_footprint_area_m2": "Natural log of planar footprint area from supplied K/attitude/AGL, independent of GT XY.",
+    "log_projection_condition": "Natural log of the rectification projection condition, computed before matching.",
+    "log_query_bbox_pixels": "Natural log of rectified query bounding-box pixel count; included as a geometry/scale control.",
+    "log_query_keypoint_density_mpx": "log(1 + query SIFT keypoints per million rectified bounding-box pixels). Query extraction precedes correspondence search. Proxy for feature content, not a blur measurement; affected by mask, scale and feature budget.",
+    "log_reference_crop_pixels": "Natural log of the reference crop pixel count; known before matching. Controls density denominator and resampling geometry.",
+    "log_reference_keypoint_density_mpx": "log(1 + reference SIFT keypoints per million crop pixels). Map-only proxy computed before correspondence search; affected by the 6000-feature budget, crop, resampling, padding and scene content. Not a pure texture or blur metric.",
+    "log_search_to_footprint_ratio": "Natural log of full requested prior-centred search area divided by supplied planar footprint area.",
+    "map_coverage": "Prior-centred rectangle coverage within raster bounds, computed before SIFT extraction/matching."
+  },
+  "final_test_evaluated": false,
+  "final_test_scene": "Scene_21",
+  "l2_strength": 1.0,
+  "limitations": [
+    "Two working scenes and one unseen test scene provide limited cross-scene evidence.",
+    "Adjacent frames are correlated; do not randomly split frames across train and validation.",
+    "Raster coverage ignores internal padding; valid-image coverage is not established.",
+    "Query-keypoint density is available after query feature extraction but before map correspondence search.",
+    "R is uncalibrated; no flight risk model or scene-general probability guarantee is established.",
+    "Primary planner-oriented comparisons must not use query-image features as if they were known pre-flight.",
+    "Map keypoint density can saturate at the fixed detector budget; evaluate its utility rather than assuming it is an adequate map-quality metric.",
+    "p_success_3m combines rejection and inaccurate acceptance in its complement.",
+    "Do not equate this probability to route arrival probability.",
+    "No model of VIO drift, corrected residual transitions, false-fix dynamics, or calibrated R.",
+    "Validation selects candidates; it is not an independent final test.",
+    "No IID frame bootstrap or broad cross-scene generalization claim."
+  ],
+  "model_inputs": {
+    "constant": [],
+    "geometry": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels"
+    ],
+    "geometry_and_map_features": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels",
+      "log_reference_keypoint_density_mpx"
+    ]
+  },
+  "numpy": "2.1.3",
+  "primary_selection_metric": "Scene_07_log_loss",
+  "protocol": "correct_fix_3m_logistic_v1",
+  "schema_version": 1,
+  "scipy": "1.16.3",
+  "selected_by_validation": "constant",
+  "source_sha256": "e3ca1d66725b3493203ec20418807887e01fb0936a0cb068a9589259f8dbbd4b",
+  "supported_domain_warning": "Feature min/max are coarse diagnostics, not calibrated support bounds.",
+  "target_threshold_m": 3.0,
+  "train_scene": "Scene_05",
+  "validation_passed": false,
+  "validation_scene": "Scene_07"
+}

@@ -1,0 +1,17 @@
+{
+  "coefficients": [],
+  "feature_max": [],
+  "feature_min": [],
+  "feature_names": [],
+  "intercept": 1.1568811967920853,
+  "l2_strength": 1.0,
+  "mean": [],
+  "model_type": "constant",
+  "optimizer": "empirical_training_frequency",
+  "probability_event": "matcher accepted and horizontal error <= 3 m",
+  "scale": [],
+  "schema_version": 1,
+  "target_threshold_m": 3.0,
+  "training_count": 209,
+  "training_positive_count": 159
+}

@@ -1,0 +1,94 @@
+{
+  "artifact_sha256": {
+    "evaluation_models/constant.json": "cb1950d573cd6c991745e03dc21fe1a7655239507840b89583140b419a6df2a3",
+    "evaluation_models/geometry.json": "687bcad97b3f8a7f9d89e8d8b37ef1caaca8513b971a55015ffed71a8be25dfd",
+    "evaluation_models/geometry_and_map_features.json": "2d014e28f8e8912444d37d10bb270019a0af26035f318e2848cb2247166ac885"
+  },
+  "dataset_sha256": {
+    "feature_spec.json": "e1479abe3456cc597890de339fb0dce758ba9ea9c0a560e42572821b57c30cb8",
+    "features.csv": "6a350476f2fc1eef0e9f286652c8d41557e2ee5e24794e31af37010fe21a775b",
+    "labels.csv": "a85c686e27c2423b2652602937bbcb45e042d80765b28fbcdbc878480a7147d2"
+  },
+  "deployment_status": "diagnostic_only",
+  "evaluation_scene": "Scene_05",
+  "experiment_domain": {
+    "agl_range_m": [
+      20,
+      120
+    ],
+    "agl_source": "dataset_GT_position_and_aerial_DSM",
+    "camera_attitude": "dataset_ground_truth",
+    "coverage_policy": "available_crop",
+    "matcher": "sift",
+    "matching_gsd_m": 0.5,
+    "prior_covariance_xy_m2": [
+      [
+        400,
+        0
+      ],
+      [
+        0,
+        400
+      ]
+    ],
+    "prior_source": "synthetic_gaussian_from_gt",
+    "reference_mode": "aerial",
+    "search_probability_mass": 0.99,
+    "sift": {
+      "maximum_median_reprojection_error_px": 3,
+      "minimum_good_matches": 12,
+      "minimum_inlier_ratio": 0.4,
+      "minimum_inliers": 8,
+      "nfeatures": 6000,
+      "ransac_threshold_px": 3,
+      "ratio_threshold": 0.75
+    }
+  },
+  "final_test_evaluated": false,
+  "final_test_scene": "Scene_21",
+  "independent_final_test": false,
+  "l2_strength": 1.0,
+  "limitations": [
+    "Two working scenes and one unseen test scene provide limited cross-scene evidence.",
+    "Adjacent frames are correlated; do not randomly split frames across train and validation.",
+    "Raster coverage ignores internal padding; valid-image coverage is not established.",
+    "Query-keypoint density is available after query feature extraction but before map correspondence search.",
+    "R is uncalibrated; no flight risk model or scene-general probability guarantee is established.",
+    "Primary planner-oriented comparisons must not use query-image features as if they were known pre-flight.",
+    "Map keypoint density can saturate at the fixed detector budget; evaluate its utility rather than assuming it is an adequate map-quality metric.",
+    "Reverse direction was proposed after inspecting forward results; not a fresh independent test.",
+    "All candidates are reported; no deployment selection or pooled refit is performed.",
+    "Scene_21 outcomes are not read. Source tables and forward model outputs are not changed."
+  ],
+  "model_inputs": {
+    "constant": [],
+    "geometry": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels"
+    ],
+    "geometry_and_map_features": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels",
+      "log_reference_keypoint_density_mpx"
+    ]
+  },
+  "numpy": "2.1.3",
+  "protocol": "correct_fix_3m_reverse_diagnostic_v1",
+  "schema_version": 1,
+  "scipy": "1.16.3",
+  "source_sha256": "69d12539e9696d2fa5fec5bcddd1df567541ba5f2f3f0a71ccb529ac6225fd8b",
+  "source_split_labels": "Original forward split retained unchanged; masks reversed in memory",
+  "target_threshold_m": 3.0,
+  "train_scene": "Scene_07",
+  "validation_passed": false
+}

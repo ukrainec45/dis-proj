@@ -1,0 +1,16 @@
+﻿model,bin_lower,bin_upper,count,mean_probability,observed_success
+constant,0.0,0.2,0,,
+constant,0.2,0.4,209,0.2325285895806862,0.7607655502392344
+constant,0.4,0.6,0,,
+constant,0.6,0.8,0,,
+constant,0.8,1.0,0,,
+geometry,0.0,0.2,172,0.07397713691207053,0.7093023255813954
+geometry,0.2,0.4,24,0.28042772242180697,1.0
+geometry,0.4,0.6,9,0.4636430739996958,1.0
+geometry,0.6,0.8,4,0.6460449444114328,1.0
+geometry,0.8,1.0,0,,
+geometry_and_map_features,0.0,0.2,168,0.032564457846072356,0.7023809523809523
+geometry_and_map_features,0.2,0.4,24,0.2506848388178169,1.0
+geometry_and_map_features,0.4,0.6,11,0.5255890253845993,1.0
+geometry_and_map_features,0.6,0.8,5,0.7104036330985959,1.0
+geometry_and_map_features,0.8,1.0,1,0.8000433519095471,1.0

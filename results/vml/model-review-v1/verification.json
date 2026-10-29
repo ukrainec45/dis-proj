@@ -1,0 +1,37 @@
+{
+  "source": "results/vml/correct-fix-model-v1",
+  "dataset_hashes_verified": true,
+  "all_six_model_hashes_verified": true,
+  "validation_sample_count": 209,
+  "training_sample_count": 787,
+  "checks": {
+    "constant": {
+      "predictions_reproduced": true,
+      "metrics_reproduced": true,
+      "range_warnings_reproduced": true
+    },
+    "geometry": {
+      "predictions_reproduced": true,
+      "metrics_reproduced": true,
+      "range_warnings_reproduced": true,
+      "objective_reproduced": true,
+      "gradient_max_abs": 1.2861202872915811e-05,
+      "training_only_means_verified": true
+    },
+    "geometry_and_map_features": {
+      "predictions_reproduced": true,
+      "metrics_reproduced": true,
+      "range_warnings_reproduced": true,
+      "objective_reproduced": true,
+      "gradient_max_abs": 2.5897904782967718e-05,
+      "training_only_means_verified": true
+    }
+  },
+  "real_data_fitted_locally": false,
+  "holdout_evaluated": false,
+  "source_summary_sha256": "bbb39fd12746493323dd1884a993fb01e94f697b21d568ba61958224f5f41132",
+  "limitations": [
+    "Original images and hosted runtime were not independently replayed.",
+    "These checks reproduce numerical exports; they do not establish field calibration."
+  ]
+}

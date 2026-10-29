@@ -1,0 +1,2 @@
+# Preserve exact experimental artifact bytes and recorded SHA-256 hashes.
+results/vml/** -text

@@ -1,0 +1,7 @@
+scene_id,group,count,accepted_within_3m,success_rate,accepted_over_3m,insufficient_matches,insufficient_inliers
+Scene_05,all,787,183,0.23252858958068615,48,272,284
+Scene_05,footprint_inside_raster,229,111,0.4847161572052402,2,99,17
+Scene_05,footprint_outside_raster,558,72,0.12903225806451613,46,173,267
+Scene_07,all,209,159,0.7607655502392344,5,37,8
+Scene_07,footprint_inside_raster,205,158,0.7707317073170732,5,37,5
+Scene_07,footprint_outside_raster,4,1,0.25,0,0,3

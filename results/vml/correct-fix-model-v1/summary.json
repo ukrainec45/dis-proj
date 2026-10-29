@@ -1,0 +1,153 @@
+{
+  "evaluations": {
+    "constant": {
+      "brier_score": 0.46103561441421,
+      "calibration_bins": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.2,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.4,
+          "count": 209,
+          "mean_probability": 0.2325285895806862,
+          "observed_success": 0.7607655502392344
+        },
+        {
+          "bin_lower": 0.4,
+          "bin_upper": 0.6,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        },
+        {
+          "bin_lower": 0.6,
+          "bin_upper": 0.8,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 1.0,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        }
+      ],
+      "log_loss": 1.1730750991421557,
+      "mean_probability": 0.2325285895806862,
+      "observed_success_rate": 0.7607655502392344,
+      "outside_training_feature_ranges_count": 0,
+      "positive_count": 159,
+      "roc_auc": 0.5,
+      "sample_count": 209
+    },
+    "geometry": {
+      "brier_score": 0.5647024315126967,
+      "calibration_bins": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.2,
+          "count": 172,
+          "mean_probability": 0.07397713691207053,
+          "observed_success": 0.7093023255813954
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.4,
+          "count": 24,
+          "mean_probability": 0.28042772242180697,
+          "observed_success": 1.0
+        },
+        {
+          "bin_lower": 0.4,
+          "bin_upper": 0.6,
+          "count": 9,
+          "mean_probability": 0.4636430739996958,
+          "observed_success": 1.0
+        },
+        {
+          "bin_lower": 0.6,
+          "bin_upper": 0.8,
+          "count": 4,
+          "mean_probability": 0.6460449444114328,
+          "observed_success": 1.0
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 1.0,
+          "count": 0,
+          "mean_probability": null,
+          "observed_success": null
+        }
+      ],
+      "log_loss": 1.7398723016659394,
+      "mean_probability": 0.12541292024230857,
+      "observed_success_rate": 0.7607655502392344,
+      "outside_training_feature_ranges_count": 55,
+      "positive_count": 159,
+      "roc_auc": 0.8163522012578617,
+      "sample_count": 209
+    },
+    "geometry_and_map_features": {
+      "brier_score": 0.5981065635207986,
+      "calibration_bins": [
+        {
+          "bin_lower": 0.0,
+          "bin_upper": 0.2,
+          "count": 168,
+          "mean_probability": 0.032564457846072356,
+          "observed_success": 0.7023809523809523
+        },
+        {
+          "bin_lower": 0.2,
+          "bin_upper": 0.4,
+          "count": 24,
+          "mean_probability": 0.2506848388178169,
+          "observed_success": 1.0
+        },
+        {
+          "bin_lower": 0.4,
+          "bin_upper": 0.6,
+          "count": 11,
+          "mean_probability": 0.5255890253845993,
+          "observed_success": 1.0
+        },
+        {
+          "bin_lower": 0.6,
+          "bin_upper": 0.8,
+          "count": 5,
+          "mean_probability": 0.7104036330985959,
+          "observed_success": 1.0
+        },
+        {
+          "bin_lower": 0.8,
+          "bin_upper": 1.0,
+          "count": 1,
+          "mean_probability": 0.8000433519095471,
+          "observed_success": 1.0
+        }
+      ],
+      "log_loss": 2.33458815233244,
+      "mean_probability": 0.10344883180096116,
+      "observed_success_rate": 0.7607655502392344,
+      "outside_training_feature_ranges_count": 153,
+      "positive_count": 159,
+      "roc_auc": 0.8729559748427673,
+      "sample_count": 209
+    }
+  },
+  "final_refit_count": 996,
+  "final_test_evaluated": false,
+  "map_feature_validation_log_loss_gain": -0.5947158506665007,
+  "selected_by_validation": "constant",
+  "target_platform_calibrated": false,
+  "trained_flight_risk_model": false,
+  "training_status": "working_scene_evaluated_models_frozen",
+  "validation_passed": false
+}

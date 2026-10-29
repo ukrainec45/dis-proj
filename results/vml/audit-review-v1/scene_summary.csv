@@ -1,0 +1,4 @@
+﻿scene_id,role,total_frames,readable_frames,geometry_candidates,strict_policy_pass,coverage_gate_rejects,below_20m,above_120m,dsm_outside,rectified_size_unsupported,projection_crosses_horizon
+Scene_05,working,1118,1118,787,147,640,0,248,78,5,0
+Scene_07,working,1219,1219,209,205,4,0,1006,3,0,1
+Scene_21,holdout,1161,1161,1082,978,104,1,67,2,4,5

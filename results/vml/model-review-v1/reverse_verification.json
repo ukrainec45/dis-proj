@@ -1,0 +1,26 @@
+{
+  "source": "results/vml/correct-fix-reverse-v1",
+  "dataset_hashes_verified": true,
+  "all_three_model_hashes_verified": true,
+  "checks": {
+    "constant": {
+      "predictions_labels_metrics_ranges_verified": true,
+      "training_count_verified": true,
+      "training_only_scaling_verified": false
+    },
+    "geometry": {
+      "predictions_labels_metrics_ranges_verified": true,
+      "training_count_verified": true,
+      "training_only_scaling_verified": true
+    },
+    "geometry_and_map_features": {
+      "predictions_labels_metrics_ranges_verified": true,
+      "training_count_verified": true,
+      "training_only_scaling_verified": true
+    }
+  },
+  "prediction_count": 2361,
+  "real_data_fitted_locally": false,
+  "holdout_evaluated": false,
+  "summary_sha256": "1afa33014fadd1d379da172b933d6bcb50896574ad607e2fc7ca0a808cfe1e2c"
+}

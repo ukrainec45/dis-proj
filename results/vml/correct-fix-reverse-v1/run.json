@@ -1,0 +1,41 @@
+{
+  "dataset_sha256": {
+    "feature_spec.json": "e1479abe3456cc597890de339fb0dce758ba9ea9c0a560e42572821b57c30cb8",
+    "features.csv": "6a350476f2fc1eef0e9f286652c8d41557e2ee5e24794e31af37010fe21a775b",
+    "labels.csv": "a85c686e27c2423b2652602937bbcb45e042d80765b28fbcdbc878480a7147d2"
+  },
+  "evaluation_scene": "Scene_05",
+  "final_test_scene": "Scene_21",
+  "independent_final_test": false,
+  "l2_strength": 1.0,
+  "model_inputs": {
+    "constant": [],
+    "geometry": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels"
+    ],
+    "geometry_and_map_features": [
+      "log_agl_m",
+      "map_coverage",
+      "log_search_to_footprint_ratio",
+      "log_projection_condition",
+      "log_footprint_area_m2",
+      "log_query_bbox_pixels",
+      "log_reference_crop_pixels",
+      "log_reference_keypoint_density_mpx"
+    ]
+  },
+  "numpy": "2.1.3",
+  "protocol": "correct_fix_3m_reverse_diagnostic_v1",
+  "schema_version": 1,
+  "scipy": "1.16.3",
+  "source_sha256": "69d12539e9696d2fa5fec5bcddd1df567541ba5f2f3f0a71ccb529ac6225fd8b",
+  "source_split_labels": "Original forward split retained unchanged; masks reversed in memory",
+  "target_threshold_m": 3.0,
+  "train_scene": "Scene_07"
+}
