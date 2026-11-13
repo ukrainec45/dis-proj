@@ -16,6 +16,9 @@ The work investigates a hybrid navigation approach that combines onboard motion 
 
 - `knowledgebase/` — research materials, requirements, models, and design documents.
 - `notebooks/` — exploratory analysis and data-processing notebook.
+- `notebooks/visibility_localization_experiment.ipynb` — Colab aerial + CAMP + RoMa + PnP experiment: 24 frames across 4 scenes × 6 conditions, with an 18-attempt preflight diagnostic; upload [the module folder](scripts/visibility_localization/README.md) to Drive before running; [protocol and validation status](docs/visibility_localization_experiment.md).
+- `notebooks/anyvisloc_controlled_ablation.ipynb` — Separate Colab controls for the author RoMa runner, adapter parity, SP/LightGlue, and retrieval with exact/noisy priors; [protocol](docs/anyvisloc_controlled_ablation.md).
+- `notebooks/anyvisloc_visibility_quick.ipynb` — Paired visibility stress test of the author pipeline: 8 frames / 40 attempts, extendable to 24 / 120; [protocol](docs/anyvisloc_visibility_quick.md) and [measured results](docs/visibility_localization_results.md).
 - `path_planning/` — areas of interest, start/goal points, and restricted-area test data.
 - `scripts/pipeline/` — preparation of planning layers and navigation-quality metrics.
 - `scripts/pipeline/chance_constrained/` — versioned scene and directed-edge

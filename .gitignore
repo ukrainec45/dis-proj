@@ -14,6 +14,7 @@ __pycache__/
 # Local test artifacts and caches
 .pytest_cache/
 /misc/pytest*/
+/results/visibility_setup_pytest/
 
 # Local notebook recovery backups
 /misc/notebook_evidence/
@@ -21,3 +22,6 @@ __pycache__/
 # Microsoft Office lock and recovery files
 ~$*
 ~WRL*.tmp
+
+# Read-only upstream source used during visibility-localization development
+/misc/anyvisloc_source/
