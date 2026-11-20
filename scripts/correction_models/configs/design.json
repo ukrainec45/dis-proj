@@ -1,0 +1,22 @@
+{
+  "protocol_id": "correction-models-v3-scene-disjoint",
+  "status": "agreed_design_reference; executable source is config.py",
+  "seed": 42,
+  "frames": 160,
+  "scene_groups": 16,
+  "evaluation_scope": "held_out_dataset_scenes",
+  "geographic_overlap_verified": false,
+  "frames_per_scene": 10,
+  "split_scene_groups": {"train": 8, "validation": 2, "calibration": 2, "test": 4},
+  "sigma_xy_m": [5, 20, 50, 100],
+  "conditions": ["clear", "fog_extreme", "smoke_extreme"],
+  "prior_draws_per_frame_sigma": 1,
+  "expected_attempts": 1920,
+  "reference_mode": "aerial",
+  "localizer": ["CAMP", "RoMa", "PnP"],
+  "localizer_adaptation": false,
+  "cuda_linalg_preference": "cusolver",
+  "inline_profiling": true,
+  "additional_route_attempts": 0,
+  "jev_requests": 0
+}

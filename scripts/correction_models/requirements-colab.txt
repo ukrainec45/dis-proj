@@ -1,0 +1,5 @@
+-r ../visibility_localization/requirements-roma-colab.txt
+scikit-learn==1.6.1
+pyproj==3.7.1
+rasterio==1.4.3
+psutil==6.1.1
