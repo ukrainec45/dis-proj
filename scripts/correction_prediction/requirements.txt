@@ -1,0 +1,2 @@
+# Add to the repository requirements; scoped to this experiment.
+scikit-learn>=1.5,<2

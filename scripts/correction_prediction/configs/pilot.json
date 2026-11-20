@@ -1,0 +1,17 @@
+{
+  "protocol_id": "correction-delta-v1",
+  "stage": "pilot",
+  "frames": 8,
+  "selection_source": "previous quick visibility selection/selected_samples.csv",
+  "sigma_xy_m": [5, 20, 50, 100],
+  "conditions": ["clear", "fog_extreme", "smoke_extreme"],
+  "trials": 3,
+  "expected_attempts": 288,
+  "reference_mode": "aerial",
+  "matching_method": "Roma",
+  "map_alignment": "prior_yaw",
+  "delta_edges_m": [-20, -5, -1, 1, 5, 20],
+  "main_campaign_approved": false,
+  "jev_model": "jev-1.14.0",
+  "jev_max_requests": 0
+}
