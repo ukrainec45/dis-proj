@@ -26,3 +26,11 @@ The work investigates a hybrid navigation approach that combines onboard motion 
 The notebook may be used for exploratory research. Every implementation added outside the notebook must be covered by reliable automated tests. Tests should verify expected behavior, edge cases, invalid inputs, and the safety-critical constraints relevant to the component.
 
 Design documents in `knowledgebase/` are the primary reference for research intent and system requirements.
+
+## Project website
+
+The static homepage is in `docs/index.html`. After pushing these files, enable
+**Settings → Pages → Build and deployment → Deploy from a branch**, select the
+branch containing the site and the **`/docs`** folder, then save.
+The published project homepage will be <https://ukrainec45.github.io/dis-proj/>.
+This URL can be used as the application homepage in Google Cloud once it is live.

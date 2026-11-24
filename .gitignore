@@ -1,6 +1,10 @@
 ~$.*
 *.pyc
 .venv/
+# Local Google OAuth client credentials
+/configs/client_secret_*.json
+.openvins_ws/
+/log/
 __pycache__/
 *.tif
 *.pdf

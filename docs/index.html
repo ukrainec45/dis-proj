@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Research on autonomous UAV navigation, visual localization, and route planning in GPS-denied adverse conditions.">
+  <title>Autonomous UAV Navigation in Adverse Conditions</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0 auto; padding: 40px 20px; max-width: 850px; font: 17px/1.65 system-ui, sans-serif; color: #202630; background: #fff; }
+    h1, h2 { line-height: 1.25; }
+    h1 { font-size: 2rem; }
+    h2 { margin-top: 2rem; font-size: 1.3rem; }
+    a { color: #1558b0; text-underline-offset: 3px; }
+    li { margin: .5rem 0; }
+    code { font-size: .9em; overflow-wrap: anywhere; }
+    footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Autonomous UAV Navigation in Adverse Conditions</h1>
+    <p><a href="https://github.com/ukrainec45/dis-proj">View the research repository on GitHub</a></p>
+  </header>
+  <main>
+    <p>Research project on autonomous unmanned aerial vehicle navigation when satellite navigation is unavailable or unreliable and environmental conditions are adverse.</p>
+    <p>The work investigates a hybrid navigation approach that combines onboard motion estimation, inertial propagation, terrain information, and georeferenced visual landmarks. Its central objective is to plan and execute safe, energy-aware routes while adapting to new observations during flight.</p>
+
+    <h2>Research scope</h2>
+    <ul>
+      <li>Pre-flight multi-objective route planning on a raster representation of the area.</li>
+      <li>Assessment of terrain, visibility, wind, obstacles, and navigation quality.</li>
+      <li>Route adaptation when conditions or obstacles change.</li>
+      <li>Localization health monitoring and safe, accurate landing support.</li>
+      <li>Operation under limited onboard computing resources and intermittent communications.</li>
+    </ul>
+
+    <h2>Repository layout</h2>
+    <ul>
+      <li><code>knowledgebase/</code> — research materials, requirements, models, and design documents.</li>
+      <li><code>notebooks/</code> — exploratory analysis and data-processing notebooks.</li>
+      <li><code>notebooks/visibility_localization_experiment.ipynb</code> — Colab aerial + CAMP + RoMa + PnP experiment: 24 frames across 4 scenes × 6 conditions, with an 18-attempt preflight diagnostic. See the <a href="https://github.com/ukrainec45/dis-proj/blob/HEAD/scripts/visibility_localization/README.md">module documentation</a> and <a href="https://github.com/ukrainec45/dis-proj/blob/HEAD/docs/visibility_localization_experiment.md">protocol and validation status</a>.</li>
+      <li><code>notebooks/anyvisloc_controlled_ablation.ipynb</code> — separate Colab controls for the author RoMa runner, adapter parity, SP/LightGlue, and retrieval with exact/noisy priors. See the <a href="https://github.com/ukrainec45/dis-proj/blob/HEAD/docs/anyvisloc_controlled_ablation.md">protocol</a>.</li>
+      <li><code>notebooks/anyvisloc_visibility_quick.ipynb</code> — paired visibility stress test of the author pipeline: 8 frames / 40 attempts, extendable to 24 / 120. See the <a href="https://github.com/ukrainec45/dis-proj/blob/HEAD/docs/anyvisloc_visibility_quick.md">protocol</a> and <a href="https://github.com/ukrainec45/dis-proj/blob/HEAD/docs/visibility_localization_results.md">measured results</a>.</li>
+      <li><code>path_planning/</code> — areas of interest, start/goal points, and restricted-area test data.</li>
+      <li><code>scripts/pipeline/</code> — preparation of planning layers and navigation-quality metrics.</li>
+      <li><code>scripts/pipeline/chance_constrained/</code> — versioned scene and directed-edge inputs for the chance-constrained planner (first increment; no OpenVINS, absolute visual-map-localization, TAN, or route-success outcome models yet).</li>
+      <li><code>scripts/moa/</code> — multi-objective path-planning experiments and validation utilities.</li>
+      <li><code>plots/</code> — generated planning visualizations.</li>
+    </ul>
+
+    <h2>Google Drive integration</h2>
+    <p>Research notebooks use Google Drive to read research datasets and model weights and to save experiment results. The researcher authorizes access through their configured tools. This project homepage is a static information page and does not initiate Google sign-in.</p>
+
+    <h2>Development policy</h2>
+    <p>The notebook may be used for exploratory research. Every implementation added outside the notebook must be covered by reliable automated tests. Tests should verify expected behavior, edge cases, invalid inputs, and the safety-critical constraints relevant to the component.</p>
+    <p>Design documents in <code>knowledgebase/</code> are the primary reference for research intent and system requirements.</p>
+  </main>
+  <footer>
+    <p>Based on the repository <a href="https://github.com/ukrainec45/dis-proj/blob/HEAD/README.md">README</a>.</p>
+  </footer>
+</body>
+</html>
